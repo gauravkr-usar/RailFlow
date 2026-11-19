@@ -1,0 +1,32 @@
+# Compiled class files
+*.class
+
+# Maven build output
+target/
+
+# IDE files
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# Environment variables
+.env
+
+# Log files
+*.log
+logs/
+
+# macOS
+.DS_Store
+
+# Node & frontend
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+.vite/
+
+# Spring Boot specific
+spring.log
