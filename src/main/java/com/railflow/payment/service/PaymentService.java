@@ -167,15 +167,15 @@ public class PaymentService {
     private void publishPaymentSuccessfulEvent(Payment payment) {
         try {
             kafkaTemplate.ifPresent(kt -> {
-                PaymentSuccessfulEvent event = PaymentSuccessfulEvent.builder()
-                        .bookingId(payment.getBooking().getId())
-                        .pnr(payment.getBooking().getPnr())
-                        .userId(payment.getBooking().getUser().getId())
-                        .userEmail(payment.getBooking().getUser().getEmail())
-                        .amount(payment.getAmount())
-                        .razorpayPaymentId(payment.getRazorpayPaymentId())
-                        .timestamp(Instant.now())
-                        .build();
+                PaymentSuccessfulEvent event = new PaymentSuccessfulEvent(
+                        payment.getBooking().getId(),
+                        payment.getBooking().getPnr(),
+                        payment.getBooking().getUser().getId(),
+                        payment.getBooking().getUser().getEmail(),
+                        payment.getAmount(),
+                        payment.getRazorpayPaymentId(),
+                        Instant.now()
+                );
                 kt.send("payment-successful-events", payment.getRazorpayOrderId(), event);
             });
         } catch (Exception e) {
@@ -186,13 +186,13 @@ public class PaymentService {
     private void publishPaymentFailedEvent(Payment payment, String reason) {
         try {
             kafkaTemplate.ifPresent(kt -> {
-                PaymentFailedEvent event = PaymentFailedEvent.builder()
-                        .bookingId(payment.getBooking().getId())
-                        .pnr(payment.getBooking().getPnr())
-                        .userId(payment.getBooking().getUser().getId())
-                        .reason(reason)
-                        .timestamp(Instant.now())
-                        .build();
+                PaymentFailedEvent event = new PaymentFailedEvent(
+                        payment.getBooking().getId(),
+                        payment.getBooking().getPnr(),
+                        payment.getBooking().getUser().getId(),
+                        reason,
+                        Instant.now()
+                );
                 kt.send("payment-failed-events", payment.getRazorpayOrderId(), event);
             });
         } catch (Exception e) {

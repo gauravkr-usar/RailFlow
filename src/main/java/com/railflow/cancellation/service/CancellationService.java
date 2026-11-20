@@ -136,7 +136,7 @@ public class CancellationService {
                 .originalFare(originalFare)
                 .cancellationCharges(cancellationCharges)
                 .refundAmount(refundAmount)
-                .refundStatus(refund != null ? refund.getStatus().name() : "NO_REFUND")
+                .refundStatus(refund != null ? refund.getStatus() : null)
                 .cancellationTime(cancellation.getCancellationTime())
                 .build();
     }
