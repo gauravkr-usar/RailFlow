@@ -55,4 +55,12 @@ public class AdminController {
         Map<String, Object> health = adminDashboardService.getSystemHealth();
         return ResponseEntity.ok(ApiResponse.success("System health status", health));
     }
+
+    @GetMapping("/bookings")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Get all system bookings for admin audit")
+    public ResponseEntity<ApiResponse<java.util.List<com.railflow.admin.dto.RecentBookingDto>>> getAllBookings() {
+        java.util.List<com.railflow.admin.dto.RecentBookingDto> bookings = adminDashboardService.getAllBookings();
+        return ResponseEntity.ok(ApiResponse.success("All system bookings fetched", bookings));
+    }
 }

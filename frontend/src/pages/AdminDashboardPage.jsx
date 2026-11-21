@@ -87,13 +87,27 @@ export default function AdminDashboardPage() {
       });
   };
 
-  const loadBookings = () => {
-    let list = [];
+  const loadBookings = async () => {
+    let localList = [];
     try {
       const raw = localStorage.getItem('railflow_sample_bookings');
-      if (raw) list = JSON.parse(raw);
+      if (raw) localList = JSON.parse(raw);
+      const latestRaw = localStorage.getItem('railflow_latest_booking');
+      if (latestRaw) {
+        const latest = JSON.parse(latestRaw);
+        if (!localList.some(b => b.pnr === latest.pnr)) {
+          localList.unshift(latest);
+        }
+      }
     } catch (e) {
       console.error(e);
+    }
+
+    let backendList = [];
+    try {
+      backendList = await adminAPI.getBookings();
+    } catch (err) {
+      console.warn("Could not fetch backend bookings:", err);
     }
 
     const defaultBookings = [
@@ -104,12 +118,44 @@ export default function AdminDashboardPage() {
     ];
 
     const mergedMap = new Map();
-    list.forEach(b => mergedMap.set(b.pnr, b));
+
+    // 1. First add backend real bookings from PostgreSQL
+    if (Array.isArray(backendList)) {
+      backendList.forEach(b => {
+        if (b && b.pnr) {
+          mergedMap.set(b.pnr, {
+            ...b,
+            passengerName: b.userName || b.passengerName || b.userEmail || 'Traveler',
+            totalFare: b.amount || b.totalFare || 1420,
+            status: b.status || 'CONFIRMED',
+            sourceStationCode: b.sourceStationCode || 'NDLS',
+            destinationStationCode: b.destinationStationCode || 'BSB'
+          });
+        }
+      });
+    }
+
+    // 2. Add local bookings (user bookings from local storage)
+    localList.forEach(b => {
+      if (b && b.pnr) {
+        mergedMap.set(b.pnr, {
+          ...b,
+          passengerName: b.passengerName || b.userName || b.passengers?.[0]?.name || b.passengers?.[0]?.passengerName || 'Traveler',
+          totalFare: b.totalFare || b.amount || 1420,
+          status: b.status || b.bookingStatus || 'CONFIRMED',
+          sourceStationCode: b.sourceStationCode || 'NDLS',
+          destinationStationCode: b.destinationStationCode || 'BSB'
+        });
+      }
+    });
+
+    // 3. Fallback demo bookings
     defaultBookings.forEach(b => {
       if (!mergedMap.has(b.pnr)) mergedMap.set(b.pnr, b);
     });
 
-    setAllBookings(Array.from(mergedMap.values()));
+    const finalBookings = Array.from(mergedMap.values());
+    setAllBookings(finalBookings);
   };
 
   const notify = (msg) => {

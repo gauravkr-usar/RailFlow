@@ -741,6 +741,14 @@ export const adminAPI = {
       };
     }
   },
+  getBookings: async () => {
+    try {
+      const res = await api.get('/admin/bookings');
+      return res.data?.data || res.data || [];
+    } catch {
+      return [];
+    }
+  },
   getUsers: async (page = 0, size = 10) => {
     try {
       const res = await api.get('/admin/users', { params: { page, size } });

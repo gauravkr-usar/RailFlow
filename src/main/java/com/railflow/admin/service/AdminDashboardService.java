@@ -117,6 +117,23 @@ public class AdminDashboardService {
         log.info("User {} status updated to enabled: {}", userId, isEnabled);
     }
 
+    @Transactional(readOnly = true)
+    public List<RecentBookingDto> getAllBookings() {
+        return bookingRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt")).stream()
+                .map(b -> RecentBookingDto.builder()
+                        .pnr(b.getPnr())
+                        .userName(b.getUser() != null ? b.getUser().getFirstName() + " " + b.getUser().getLastName() : "Traveler")
+                        .userEmail(b.getUser() != null ? b.getUser().getEmail() : "")
+                        .trainNumber(b.getTrain() != null ? b.getTrain().getTrainNumber() : "")
+                        .trainName(b.getTrain() != null ? b.getTrain().getTrainName() : "")
+                        .journeyDate(b.getJourneyDate())
+                        .status(b.getStatus())
+                        .amount(b.getTotalFare())
+                        .createdAt(b.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
     public Map<String, Object> getSystemHealth() {
         Map<String, Object> health = new HashMap<>();
         health.put("status", "UP");

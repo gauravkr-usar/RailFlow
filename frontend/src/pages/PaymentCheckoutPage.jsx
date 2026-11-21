@@ -95,6 +95,8 @@ export default function PaymentCheckoutPage() {
         const confirmedTicket = {
           bookingId: parseInt(bookingId, 10) || Math.floor(Math.random() * 9000) + 1000,
           pnr: pnr,
+          passengerName: allocatedPassengers[0]?.name || allocatedPassengers[0]?.passengerName || 'Gaurav Kumar',
+          userName: allocatedPassengers[0]?.name || allocatedPassengers[0]?.passengerName || 'Gaurav Kumar',
           status: 'CONFIRMED',
           bookingStatus: 'CONFIRMED',
           trainNumber: activeBooking?.trainNumber || '22436',
@@ -108,6 +110,7 @@ export default function PaymentCheckoutPage() {
           arrivalTime: '14:00:00',
           coachType: activeBooking?.coachType || '3A',
           totalFare: fare,
+          amount: fare,
           passengers: allocatedPassengers,
           createdAt: new Date().toISOString()
         };
