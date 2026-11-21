@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { login: setAuthUser } = useAuth();
+  const { login, register } = useAuth();
 
   const [isLogin, setIsLogin] = useState(searchParams.get('mode') !== 'register');
   const [formData, setFormData] = useState({
@@ -26,23 +26,29 @@ export default function AuthPage() {
     setError(null);
 
     try {
-      let res;
       if (isLogin) {
-        res = await authAPI.login({ email: formData.email, password: formData.password });
-      } else {
-        res = await authAPI.register(formData);
-      }
-
-      const data = res.data || res;
-      if (data.accessToken) {
-        localStorage.setItem('railflow_token', data.accessToken);
-        setAuthUser(data);
+        await login(formData.email.trim(), formData.password);
         navigate('/');
       } else {
-        setIsLogin(true);
+        const sanitizedPhone = formData.phoneNumber.replace(/^(\+91|0)/, '').replace(/\D/g, '');
+        const payload = {
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          email: formData.email.trim(),
+          password: formData.password,
+          phoneNumber: sanitizedPhone
+        };
+        await register(payload);
+        navigate('/');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Authentication failed. Please check your credentials.');
+      const respData = err.response?.data;
+      let msg = respData?.message || err.message || 'Authentication failed. Please check your credentials.';
+      if (respData?.errors) {
+        const fieldErrors = Object.values(respData.errors).join(', ');
+        msg = `${msg}: ${fieldErrors}`;
+      }
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -121,13 +127,13 @@ export default function AuthPage() {
 
             {!isLogin && (
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number (10 digits)</label>
                 <input
                   type="tel"
                   required
                   value={formData.phoneNumber}
                   onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                  placeholder="+919876543210"
+                  placeholder="9876543210"
                   className="w-full text-sm rounded-lg border-slate-300 border px-3 py-2"
                 />
               </div>
@@ -144,6 +150,11 @@ export default function AuthPage() {
                 placeholder="••••••••"
                 className="w-full text-sm rounded-lg border-slate-300 border px-3 py-2"
               />
+              {!isLogin && (
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Min 8 chars with uppercase, lowercase, digit, and special char (@$!%*?&).
+                </p>
+              )}
             </div>
 
             <button

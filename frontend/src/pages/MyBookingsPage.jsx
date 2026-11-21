@@ -14,31 +14,34 @@ export default function MyBookingsPage() {
 
   const loadBookings = () => {
     setLoading(true);
+    let localList = [];
+    try {
+      const raw = localStorage.getItem('railflow_sample_bookings');
+      if (raw) localList = JSON.parse(raw);
+    } catch (e) {
+      console.warn(e);
+    }
+
+    if (localList.length > 0) {
+      setBookings(localList);
+      setLoading(false);
+    }
+
     bookingAPI.getMyBookings()
       .then(res => {
-        const data = res.data || res;
-        setBookings(Array.isArray(data) ? data : []);
+        const data = res?.data || res;
+        if (Array.isArray(data) && data.length > 0) {
+          setBookings(data);
+        } else if (localList.length > 0) {
+          setBookings(localList);
+        }
         setLoading(false);
       })
       .catch(err => {
-        console.warn("Could not load bookings, showing mock data", err);
-        setBookings([
-          {
-            bookingId: 1,
-            pnr: 'RF9281048291',
-            status: 'CONFIRMED',
-            trainNumber: '12302',
-            trainName: 'Howrah Rajdhani Express',
-            sourceStationCode: 'NDLS',
-            destinationStationCode: 'BSB',
-            journeyDate: '2024-12-25',
-            coachType: '3A',
-            totalFare: 1437.70,
-            passengers: [
-              { passengerName: 'Gaurav Kumar', coachNumber: 'B1', seatNumber: 17, berthType: 'LOWER', status: 'CONFIRMED' }
-            ]
-          }
-        ]);
+        console.warn("Could not load bookings from backend, showing saved bookings:", err);
+        if (localList.length > 0) {
+          setBookings(localList);
+        }
         setLoading(false);
       });
   };
@@ -58,9 +61,9 @@ export default function MyBookingsPage() {
     }
   };
 
-  const handleDownloadPdf = (pnr) => {
-    const url = ticketAPI.getPdfUrl(pnr);
-    window.open(url, '_blank');
+  const handleDownloadPdf = (bookingOrPnr) => {
+    const bObj = typeof bookingOrPnr === 'object' ? bookingOrPnr : bookings.find(b => b.pnr === bookingOrPnr);
+    ticketAPI.downloadTicket(bObj || { pnr: bookingOrPnr });
   };
 
   return (

@@ -36,8 +36,7 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(
             @Valid @RequestBody RegisterRequest request,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey
-    ) {
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) throws JsonProcessingException {
         if (idempotencyKey != null && !idempotencyKey.isBlank()) {
             String requestHash = hashRequest(request.getEmail());
             Optional<String> cached = idempotencyService.checkAndCreate(idempotencyKey, requestHash);

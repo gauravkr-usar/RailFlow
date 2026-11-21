@@ -9,39 +9,65 @@ export default function BookingConfirmationPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let localFound = null;
+    try {
+      const latest = localStorage.getItem('railflow_latest_booking');
+      if (latest) {
+        const parsed = JSON.parse(latest);
+        if (parsed.pnr === pnr) localFound = parsed;
+      }
+      if (!localFound) {
+        const rawList = localStorage.getItem('railflow_sample_bookings');
+        if (rawList) {
+          const list = JSON.parse(rawList);
+          localFound = list.find(b => b.pnr === pnr);
+        }
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+
+    if (localFound) {
+      setBooking(localFound);
+      setLoading(false);
+    }
+
     bookingAPI.getBookingByPnr(pnr)
       .then(res => {
-        setBooking(res.data || res);
+        const data = res?.data || res;
+        if (data && (data.pnr || data.trainNumber)) {
+          setBooking(prev => ({ ...(prev || {}), ...data }));
+        }
         setLoading(false);
       })
       .catch(err => {
         console.warn("Could not fetch PNR details from backend", err);
-        // Fallback for visual display
-        setBooking({
-          pnr: pnr,
-          status: 'CONFIRMED',
-          trainNumber: '12302',
-          trainName: 'Howrah Rajdhani Express',
-          sourceStationCode: 'NDLS',
-          sourceStationName: 'New Delhi',
-          destinationStationCode: 'BSB',
-          destinationStationName: 'Varanasi Jn',
-          journeyDate: new Date().toISOString().split('T')[0],
-          departureTime: '16:55:00',
-          arrivalTime: '23:45:00',
-          coachType: '3A',
-          totalFare: 1437.70,
-          passengers: [
-            { id: 1, passengerName: 'Gaurav Kumar', age: 26, gender: 'MALE', coachNumber: 'B1', seatNumber: 17, berthType: 'LOWER', status: 'CONFIRMED' }
-          ]
-        });
+        if (!localFound) {
+          setBooking({
+            pnr: pnr,
+            status: 'CONFIRMED',
+            trainNumber: '22436',
+            trainName: 'Vande Bharat Express',
+            sourceStationCode: 'NDLS',
+            sourceStationName: 'New Delhi',
+            destinationStationCode: 'BSB',
+            destinationStationName: 'Varanasi Junction',
+            journeyDate: new Date().toISOString().split('T')[0],
+            departureTime: '06:00:00',
+            arrivalTime: '14:00:00',
+            coachType: 'CC',
+            totalFare: 1750,
+            passengers: [
+              { id: 1, passengerName: 'Gaurav Kumar', name: 'Gaurav Kumar', age: 26, gender: 'MALE', coachNumber: 'C1', seatNumber: 15, berthType: 'WINDOW', status: 'CONFIRMED' }
+            ]
+          });
+        }
         setLoading(false);
       });
   }, [pnr]);
 
   const handleDownloadPdf = () => {
-    const url = ticketAPI.getPdfUrl(pnr);
-    window.open(url, '_blank');
+    ticketAPI.downloadTicket(booking);
   };
 
   return (

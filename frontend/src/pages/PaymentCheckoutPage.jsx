@@ -45,13 +45,13 @@ export default function PaymentCheckoutPage() {
       // 1. Create order
       let orderId = 'order_' + Math.random().toString(36).substring(2, 10);
       try {
-        const orderRes = await paymentAPI.createOrder(parseInt(bookingId, 10));
+        const orderRes = await paymentAPI.createOrder(parseInt(bookingId, 10), fare);
         orderId = orderRes.data?.orderId || orderRes.orderId || orderId;
       } catch (err) {
         console.warn("Using simulated order id", err);
       }
 
-      // 2. Verify payment
+      // 2. Verify payment & persist confirmed booking
       setTimeout(async () => {
         try {
           await paymentAPI.verifyPayment({
@@ -64,9 +64,71 @@ export default function PaymentCheckoutPage() {
           console.warn("Verified locally", err);
         }
 
+        // Retrieve active booking data
+        let activeBooking = null;
+        try {
+          const raw = localStorage.getItem('railflow_active_booking');
+          if (raw) activeBooking = JSON.parse(raw);
+        } catch (err) {
+          console.error(err);
+        }
+
+        const coachLetter = activeBooking?.coachType === 'CC' ? 'C' : activeBooking?.coachType === 'EC' ? 'E' : activeBooking?.coachType === '1A' ? 'H' : activeBooking?.coachType === '2A' ? 'A' : activeBooking?.coachType === 'SL' ? 'S' : 'B';
+        const allocatedPassengers = (activeBooking?.passengers && activeBooking.passengers.length > 0
+          ? activeBooking.passengers
+          : [{ name: 'Gaurav Kumar', age: 26, gender: 'MALE', berthPreference: 'LOWER' }]
+        ).map((p, idx) => ({
+          id: idx + 1,
+          passengerName: p.name || p.passengerName || 'Passenger ' + (idx + 1),
+          name: p.name || p.passengerName || 'Passenger ' + (idx + 1),
+          age: p.age || 26,
+          gender: p.gender || 'MALE',
+          coachNumber: coachLetter + '1',
+          coach: coachLetter + '1',
+          seatNumber: 17 + idx * 3,
+          berthNumber: 17 + idx * 3,
+          berthType: p.berthPreference || (idx % 2 === 0 ? 'LOWER' : 'UPPER'),
+          status: 'CONFIRMED',
+          currentStatus: 'CNF'
+        }));
+
+        const confirmedTicket = {
+          bookingId: parseInt(bookingId, 10) || Math.floor(Math.random() * 9000) + 1000,
+          pnr: pnr,
+          status: 'CONFIRMED',
+          bookingStatus: 'CONFIRMED',
+          trainNumber: activeBooking?.trainNumber || '22436',
+          trainName: activeBooking?.trainName || 'Vande Bharat Express',
+          sourceStationCode: activeBooking?.sourceStationCode || 'NDLS',
+          sourceStationName: activeBooking?.sourceStationCode || 'New Delhi',
+          destinationStationCode: activeBooking?.destinationStationCode || 'BSB',
+          destinationStationName: activeBooking?.destinationStationCode || 'Varanasi Junction',
+          journeyDate: activeBooking?.journeyDate || new Date().toISOString().split('T')[0],
+          departureTime: '06:00:00',
+          arrivalTime: '14:00:00',
+          coachType: activeBooking?.coachType || '3A',
+          totalFare: fare,
+          passengers: allocatedPassengers,
+          createdAt: new Date().toISOString()
+        };
+
+        // Save latest confirmed ticket
+        localStorage.setItem('railflow_latest_booking', JSON.stringify(confirmedTicket));
+
+        // Save to My Bookings list in localStorage
+        try {
+          const rawList = localStorage.getItem('railflow_sample_bookings');
+          const existingList = rawList ? JSON.parse(rawList) : [];
+          // Prepend new booking
+          const updatedList = [confirmedTicket, ...existingList.filter(b => b.pnr !== pnr)];
+          localStorage.setItem('railflow_sample_bookings', JSON.stringify(updatedList));
+        } catch (err) {
+          console.error(err);
+        }
+
         setProcessing(false);
         navigate(`/booking/confirmation/${pnr}?bookingId=${bookingId}`);
-      }, 1500);
+      }, 1200);
 
     } catch (err) {
       setProcessing(false);

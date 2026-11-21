@@ -4,7 +4,7 @@
 Set-Location "$PSScriptRoot\frontend"
 
 Write-Host "Starting React frontend..." -ForegroundColor Cyan
-Write-Host "Frontend will be available at: http://localhost:5173" -ForegroundColor Green
+Write-Host "Frontend will be available at: http://localhost:3000" -ForegroundColor Green
 Write-Host ""
 
 npm run dev

@@ -2,13 +2,15 @@ package com.railflow.station.dto;
 
 import lombok.*;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class StationDto {
+public class StationDto implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private Long id;
     private String stationCode;

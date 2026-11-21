@@ -3,11 +3,24 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Calendar, ArrowRightLeft, ShieldCheck, Zap, RefreshCw, Award, Train, Sparkles, MapPin } from 'lucide-react';
 import { trainAPI } from '../services/api';
 
+const INITIAL_STATIONS = [
+  { id: 1, code: 'NDLS', name: 'New Delhi', city: 'New Delhi', state: 'Delhi' },
+  { id: 4, code: 'BSB', name: 'Varanasi Junction', city: 'Varanasi', state: 'Uttar Pradesh' },
+  { id: 6, code: 'MMCT', name: 'Mumbai Central', city: 'Mumbai', state: 'Maharashtra' },
+  { id: 5, code: 'HWH', name: 'Howrah Junction', city: 'Kolkata', state: 'West Bengal' },
+  { id: 2, code: 'CNB', name: 'Kanpur Central', city: 'Kanpur', state: 'Uttar Pradesh' },
+  { id: 3, code: 'PRYJ', name: 'Prayagraj Junction', city: 'Prayagraj', state: 'Uttar Pradesh' },
+  { id: 7, code: 'BRC', name: 'Vadodara Junction', city: 'Vadodara', state: 'Gujarat' },
+  { id: 8, code: 'SBC', name: 'KSR Bengaluru', city: 'Bengaluru', state: 'Karnataka' },
+  { id: 9, code: 'MAS', name: 'Chennai Central', city: 'Chennai', state: 'Tamil Nadu' },
+  { id: 10, code: 'PNBE', name: 'Patna Junction', city: 'Patna', state: 'Bihar' }
+];
+
 export default function HomePage() {
   const navigate = useNavigate();
-  const [stations, setStations] = useState([]);
+  const [stations, setStations] = useState(INITIAL_STATIONS);
   const [source, setSource] = useState('NDLS');
-  const [destination, setDestination] = useState('CSMT');
+  const [destination, setDestination] = useState('BSB');
   
   // Tomorrow's date default
   const tomorrow = new Date();
@@ -46,11 +59,12 @@ export default function HomePage() {
   };
 
   const popularRoutes = [
-    { from: 'NDLS', to: 'CSMT', name: 'New Delhi ➔ Mumbai' },
-    { from: 'NDLS', to: 'HWH', name: 'New Delhi ➔ Howrah' },
-    { from: 'SBC', to: 'MAS', name: 'Bengaluru ➔ Chennai' },
+    { from: 'NDLS', to: 'BSB', name: 'New Delhi ➔ Varanasi (Vande Bharat)' },
+    { from: 'NDLS', to: 'MMCT', name: 'New Delhi ➔ Mumbai (Tejas Rajdhani)' },
+    { from: 'NDLS', to: 'HWH', name: 'New Delhi ➔ Howrah (Rajdhani)' },
+    { from: 'NDLS', to: 'CNB', name: 'New Delhi ➔ Kanpur' },
+    { from: 'NDLS', to: 'PRYJ', name: 'New Delhi ➔ Prayagraj' },
     { from: 'NDLS', to: 'PNBE', name: 'New Delhi ➔ Patna' },
-    { from: 'CSMT', to: 'ADI', name: 'Mumbai ➔ Ahmedabad' },
   ];
 
   return (

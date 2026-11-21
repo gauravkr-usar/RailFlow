@@ -28,16 +28,17 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     setLoading(true);
     try {
-      const data = await authAPI.login({ email, password });
-      const accessToken = data.accessToken || data.token;
-      const refreshToken = data.refreshToken;
+      const res = await authAPI.login({ email, password });
+      const authData = (res && res.data) ? res.data : res;
+      const accessToken = authData.accessToken || authData.token;
+      const refreshToken = authData.refreshToken;
       
       const userInfo = {
-        id: data.userId || data.id,
-        email: data.email || email,
-        firstName: data.firstName || 'Traveler',
-        lastName: data.lastName || '',
-        roles: data.roles || ['ROLE_USER'],
+        id: authData.userId || authData.id,
+        email: authData.email || email,
+        firstName: authData.firstName || (authData.email ? authData.email.split('@')[0] : 'Traveler'),
+        lastName: authData.lastName || '',
+        roles: authData.roles || ['ROLE_USER'],
       };
 
       setToken(accessToken);
@@ -49,8 +50,11 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('railflow_user', JSON.stringify(userInfo));
       return { success: true, user: userInfo };
     } catch (err) {
+      if (err.response) {
+        throw err;
+      }
       console.warn('Backend login error, checking fallback demo auth:', err);
-      // Demo fallback login for smooth experience
+      // Demo fallback login for offline/demo experience
       if (email === 'admin@railflow.com') {
         const adminUser = {
           id: 1,
@@ -69,7 +73,7 @@ export const AuthProvider = ({ children }) => {
         const regularUser = {
           id: 2,
           email: email,
-          firstName: email.split('@')[0],
+          firstName: typeof email === 'string' ? email.split('@')[0] : 'User',
           lastName: 'User',
           roles: ['ROLE_USER']
         };
@@ -88,16 +92,17 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     setLoading(true);
     try {
-      const data = await authAPI.register(userData);
-      const accessToken = data.accessToken || data.token;
-      const refreshToken = data.refreshToken;
+      const res = await authAPI.register(userData);
+      const authData = (res && res.data) ? res.data : res;
+      const accessToken = authData.accessToken || authData.token;
+      const refreshToken = authData.refreshToken;
 
       const userInfo = {
-        id: data.userId || data.id,
-        email: data.email || userData.email,
-        firstName: data.firstName || userData.firstName,
-        lastName: data.lastName || userData.lastName,
-        roles: data.roles || ['ROLE_USER'],
+        id: authData.userId || authData.id,
+        email: authData.email || userData.email,
+        firstName: authData.firstName || userData.firstName,
+        lastName: authData.lastName || userData.lastName,
+        roles: authData.roles || ['ROLE_USER'],
       };
 
       if (accessToken) {
@@ -109,6 +114,9 @@ export const AuthProvider = ({ children }) => {
       }
       return { success: true, user: userInfo };
     } catch (err) {
+      if (err.response) {
+        throw err;
+      }
       console.warn('Registration fallback demo:', err);
       const demoUser = {
         id: Math.floor(Math.random() * 1000) + 10,

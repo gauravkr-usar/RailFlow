@@ -47,7 +47,7 @@ public class TrainSearchService {
             value = "trainSearch",
             key = "#request.sourceStationCode + '-' + #request.destStationCode + '-' + #request.journeyDate + '-' + (#request.coachType != null ? #request.coachType.name() : 'ALL')"
     )
-    @Transactional(readOnly = true)
+    @Transactional
     public List<TrainSearchResult> searchTrains(TrainSearchRequest request) {
         String srcCode = request.getSourceStationCode().trim().toUpperCase();
         String destCode = request.getDestStationCode().trim().toUpperCase();

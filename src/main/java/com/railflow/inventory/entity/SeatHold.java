@@ -31,7 +31,7 @@ public class SeatHold {
     private String holdToken;
 
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "seat_hold_inventory_ids", joinColumns = @JoinColumn(name = "hold_id"))
+    @CollectionTable(name = "seat_hold_inventories", joinColumns = @JoinColumn(name = "seat_hold_id"))
     @Column(name = "inventory_id")
     @Builder.Default
     private List<Long> inventoryIds = new ArrayList<>();

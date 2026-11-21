@@ -11,10 +11,9 @@ INSERT INTO roles (id, name) VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- 2. Initial Users (Passwords: Admin@1234 and User@1234)
--- BCrypt: $2a$10$w6K2yO1gA52Q7d86fO4hQOP7YdJc74W.WbB93Z99Bw7iE.4GfZ4p2
 INSERT INTO users (id, first_name, last_name, email, password_hash, phone_number, is_enabled, is_email_verified, created_at, updated_at) VALUES
-(1, 'System', 'Admin', 'admin@railflow.com', '$2a$10$w6K2yO1gA52Q7d86fO4hQOP7YdJc74W.WbB93Z99Bw7iE.4GfZ4p2', '+919876543210', true, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(2, 'Gaurav', 'Kumar', 'user@railflow.com', '$2a$10$w6K2yO1gA52Q7d86fO4hQOP7YdJc74W.WbB93Z99Bw7iE.4GfZ4p2', '+919876543211', true, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+(1, 'System', 'Admin', 'admin@railflow.com', '$2a$12$.MUILDIE5MKPG5KiHXj2xO.tBtoQPZjvgKWiJc7vAdPP7qH4bFMOm', '+919876543210', true, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(2, 'Gaurav', 'Kumar', 'user@railflow.com', '$2a$12$emrbJalD6ZquDDlIz9IUwe7okqck25AmdrTYFfX7yDFEfeG5E0Txa', '+919876543211', true, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO user_roles (user_id, role_id) VALUES
@@ -111,19 +110,20 @@ ON CONFLICT (id) DO NOTHING;
 -- 7. Seats in Coaches
 -- Coach 1 (TWO_A, 20 seats)
 INSERT INTO seats (coach_id, seat_number, berth_type, is_active)
-SELECT 1, generate_series(1, 20),
-       CASE ((generate_series(1, 20) - 1) % 4)
+SELECT 1, gs,
+       CASE ((gs - 1) % 4)
            WHEN 0 THEN 'LOWER'
            WHEN 1 THEN 'UPPER'
            WHEN 2 THEN 'SIDE_LOWER'
            ELSE 'SIDE_UPPER'
        END, true
+FROM generate_series(1,20) AS gs
 ON CONFLICT (coach_id, seat_number) DO NOTHING;
 
 -- Coach 2 (THREE_A, 24 seats)
 INSERT INTO seats (coach_id, seat_number, berth_type, is_active)
-SELECT 2, generate_series(1, 24),
-       CASE ((generate_series(1, 24) - 1) % 6)
+SELECT 2, gs,
+       CASE ((gs - 1) % 6)
            WHEN 0 THEN 'LOWER'
            WHEN 1 THEN 'MIDDLE'
            WHEN 2 THEN 'UPPER'
@@ -131,21 +131,23 @@ SELECT 2, generate_series(1, 24),
            WHEN 4 THEN 'SIDE_UPPER'
            ELSE 'LOWER'
        END, true
+FROM generate_series(1,24) AS gs
 ON CONFLICT (coach_id, seat_number) DO NOTHING;
 
 -- Coach 5 (Vande Bharat CC, 24 seats)
 INSERT INTO seats (coach_id, seat_number, berth_type, is_active)
-SELECT 5, generate_series(1, 24),
-       CASE ((generate_series(1, 24) - 1) % 2)
+SELECT 5, gs,
+       CASE ((gs - 1) % 2)
            WHEN 0 THEN 'WINDOW'
            ELSE 'AISLE'
        END, true
+FROM generate_series(1,24) AS gs
 ON CONFLICT (coach_id, seat_number) DO NOTHING;
 
 -- Coach 8 (Shiv Ganga Sleeper S1, 24 seats)
 INSERT INTO seats (coach_id, seat_number, berth_type, is_active)
-SELECT 8, generate_series(1, 24),
-       CASE ((generate_series(1, 24) - 1) % 6)
+SELECT 8, gs,
+       CASE ((gs - 1) % 6)
            WHEN 0 THEN 'LOWER'
            WHEN 1 THEN 'MIDDLE'
            WHEN 2 THEN 'UPPER'
@@ -153,6 +155,7 @@ SELECT 8, generate_series(1, 24),
            WHEN 4 THEN 'SIDE_UPPER'
            ELSE 'LOWER'
        END, true
+FROM generate_series(1,24) AS gs
 ON CONFLICT (coach_id, seat_number) DO NOTHING;
 
 -- Reset Sequences to prevent primary key collision

@@ -83,7 +83,33 @@ export default function SearchResultsPage() {
   }, [source, destination, date, selectedClass]);
 
   const handleBookNow = (train, coachType, fare) => {
-    navigate(`/booking/${train.trainId}?trainNumber=${train.trainNumber}&trainName=${encodeURIComponent(train.trainName)}&class=${coachType}&fare=${fare}&src=${source}&dest=${destination}&date=${date}`);
+    const tid = train.trainId || train.id || 1;
+    navigate(`/booking/${tid}?trainNumber=${train.trainNumber}&trainName=${encodeURIComponent(train.trainName)}&class=${coachType}&fare=${fare}&src=${source}&dest=${destination}&date=${date}`);
+  };
+
+  const getCoachList = (train) => {
+    if (train.availability && typeof train.availability === 'object' && Object.keys(train.availability).length > 0) {
+      return Object.entries(train.availability).map(([cType, info]) => ({
+        coachType: cType,
+        fare: train.fares && train.fares[cType] ? Number(train.fares[cType]) : 1200,
+        availableSeats: info?.availableSeats ?? 24,
+        status: info?.status || (info?.availableSeats > 0 ? 'AVAILABLE' : 'WL')
+      }));
+    }
+    if (Array.isArray(train.classes) && train.classes.length > 0) {
+      return train.classes.map(c => ({
+        coachType: c.coachType || '3A',
+        fare: Number(c.fare || 1200),
+        availableSeats: c.availableSeats ?? 24,
+        status: c.status || 'AVAILABLE'
+      }));
+    }
+    return [
+      { coachType: '1A', fare: 3200, availableSeats: 8, status: 'AVAILABLE' },
+      { coachType: '2A', fare: 2150, availableSeats: 18, status: 'AVAILABLE' },
+      { coachType: '3A', fare: 1420, availableSeats: 42, status: 'AVAILABLE' },
+      { coachType: 'SL', fare: 480, availableSeats: 64, status: 'AVAILABLE' }
+    ];
   };
 
   return (
@@ -118,62 +144,82 @@ export default function SearchResultsPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {trains.map((train) => (
-              <div key={train.trainId || train.trainNumber} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition hover:shadow-md">
-                <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-4">
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <span className="bg-slate-900 text-white font-mono text-xs px-2 py-0.5 rounded font-bold">
-                        {train.trainNumber}
-                      </span>
-                      <h3 className="text-lg font-bold text-slate-900">{train.trainName}</h3>
-                      <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded">
-                        Runs Daily
-                      </span>
+            {trains.map((train) => {
+              const coachList = getCoachList(train);
+              const defaultCoach = coachList[0] || { coachType: '3A', fare: 1420 };
+              return (
+                <div key={train.trainId || train.id || train.trainNumber} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 transition hover:shadow-md">
+                  <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-4">
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="bg-slate-900 text-white font-mono text-xs px-2 py-0.5 rounded font-bold">
+                          {train.trainNumber}
+                        </span>
+                        <h3 className="text-lg font-bold text-slate-900">{train.trainName}</h3>
+                        <span className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-medium">
+                          Runs Daily
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-6 mt-3 text-sm text-slate-600">
+                        <div>
+                          <span className="text-lg font-bold text-slate-900">{train.departureTime?.substring(0, 5) || '06:00'}</span>
+                          <span className="block text-xs text-slate-400">{source}</span>
+                        </div>
+                        <div className="text-center text-xs text-slate-400 border-b border-dashed border-slate-300 px-4 pb-1">
+                          {train.duration || '6h 30m'}
+                        </div>
+                        <div>
+                          <span className="text-lg font-bold text-slate-900">{train.arrivalTime?.substring(0, 5) || '14:00'}</span>
+                          <span className="block text-xs text-slate-400">{destination}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-6 mt-3 text-sm text-slate-600">
-                      <div>
-                        <span className="text-lg font-bold text-slate-900">{train.departureTime?.substring(0, 5)}</span>
-                        <span className="block text-xs text-slate-400">{source}</span>
-                      </div>
-                      <div className="text-center text-xs text-slate-400 border-b border-dashed border-slate-300 px-4 pb-1">
-                        {train.duration || '6h 30m'}
-                      </div>
-                      <div>
-                        <span className="text-lg font-bold text-slate-900">{train.arrivalTime?.substring(0, 5)}</span>
-                        <span className="block text-xs text-slate-400">{destination}</span>
-                      </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleBookNow(train, defaultCoach.coachType, defaultCoach.fare)}
+                      className="bg-orange-600 hover:bg-orange-700 active:scale-95 text-white font-bold text-sm px-5 py-2.5 rounded-xl shadow-sm transition flex items-center space-x-2"
+                    >
+                      <span>Book Ticket</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Class Availability & Booking Boxes */}
+                  <div className="mt-4">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-2">
+                      Select Class & Book:
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                      {coachList.map((coach) => (
+                        <div
+                          key={coach.coachType}
+                          className="border border-slate-200 hover:border-orange-500 rounded-xl p-3 cursor-pointer transition bg-slate-50 hover:bg-orange-50/50 flex flex-col justify-between"
+                          onClick={() => handleBookNow(train, coach.coachType, coach.fare)}
+                        >
+                          <div>
+                            <div className="flex justify-between items-center text-xs font-bold text-slate-700">
+                              <span className="text-sm font-extrabold text-slate-900">{coach.coachType}</span>
+                              <span className="text-orange-600 font-extrabold">₹{coach.fare}</span>
+                            </div>
+                            <div className="mt-2 text-xs font-semibold text-emerald-600 flex items-center">
+                              <ShieldCheck className="w-3.5 h-3.5 mr-1 text-emerald-500" />
+                              <span>{coach.status === 'AVAILABLE' ? `AVL ${coach.availableSeats}` : coach.status}</span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            className="mt-3 w-full bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold py-1.5 rounded-lg shadow-sm transition"
+                          >
+                            Book {coach.coachType}
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
-
-                {/* Class Availability Boxes */}
-                <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                  {train.availability && Object.entries(train.availability).map(([cType, info]) => {
-                    const fare = train.fares ? train.fares[cType] : 1200;
-                    return (
-                      <div
-                        key={cType}
-                        className="border border-slate-200 hover:border-orange-500 rounded-lg p-3 cursor-pointer transition bg-slate-50 hover:bg-orange-50/50"
-                        onClick={() => handleBookNow(train, cType, fare)}
-                      >
-                        <div className="flex justify-between items-center text-xs font-bold text-slate-700">
-                          <span>{cType}</span>
-                          <span className="text-orange-600 font-extrabold">₹{fare}</span>
-                        </div>
-                        <div className="mt-2 text-xs font-semibold text-emerald-600 flex items-center">
-                          <ShieldCheck className="w-3.5 h-3.5 mr-1" />
-                          AVL {info.availableSeats || 24}
-                        </div>
-                        <button className="mt-3 w-full bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold py-1 rounded">
-                          Book
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
