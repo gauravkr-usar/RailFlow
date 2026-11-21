@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Train, Search, Ticket, Calendar, Shield, LogIn, LogOut, User, Menu, X } from 'lucide-react';
+import { Train, Search, Ticket, Calendar, Shield, LogIn, LogOut, User, Menu, X, Radio } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
@@ -70,6 +70,16 @@ export default function Navbar() {
             >
               <Ticket className="w-4 h-4" />
               <span>PNR Enquiry</span>
+            </Link>
+
+            <Link
+              to="/live-status"
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-1.5 ${
+                isActive('/live-status') ? 'bg-white/10 text-rail-orange' : 'text-slate-200 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <Radio className="w-4 h-4 text-emerald-400" />
+              <span>Live Status</span>
             </Link>
 
             {isAuthenticated && (
@@ -172,6 +182,14 @@ export default function Navbar() {
           >
             <Ticket className="w-4 h-4 text-rail-orange" />
             <span>PNR Enquiry</span>
+          </Link>
+          <Link
+            to="/live-status"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center space-x-2 py-2 text-slate-200 hover:text-white"
+          >
+            <Radio className="w-4 h-4 text-emerald-400" />
+            <span>Live Train Status</span>
           </Link>
           {isAuthenticated && (
             <Link

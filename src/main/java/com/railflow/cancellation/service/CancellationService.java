@@ -20,6 +20,7 @@ import com.railflow.payment.service.RazorpayService;
 import com.railflow.refund.entity.Refund;
 import com.railflow.refund.repository.RefundRepository;
 import com.railflow.user.entity.User;
+import com.railflow.waitinglist.service.WaitingListService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -43,6 +44,7 @@ public class CancellationService {
     private final RefundRepository refundRepository;
     private final SeatInventoryService seatInventoryService;
     private final RazorpayService razorpayService;
+    private final WaitingListService waitingListService;
 
     @Transactional
     public CancellationResponse cancelBooking(Long bookingId, User user) {
@@ -127,6 +129,24 @@ public class CancellationService {
         // 5. Update Booking status
         booking.setStatus(BookingStatus.CANCELLED);
         bookingRepository.save(booking);
+
+        // 6. Automated Waiting List Promotion Engine
+        try {
+            int releasedCount = (booking.getPassengers() != null && !booking.getPassengers().isEmpty())
+                    ? booking.getPassengers().size() : 1;
+            var promoted = waitingListService.promoteEligiblePassengers(
+                    booking.getTrain().getId(),
+                    booking.getJourneyDate(),
+                    booking.getCoachType(),
+                    releasedCount
+            );
+            if (promoted != null && !promoted.isEmpty()) {
+                log.info("Auto-promoted {} waiting list passenger(s) on train {} following booking cancellation",
+                        promoted.size(), booking.getTrain().getTrainNumber());
+            }
+        } catch (Exception ex) {
+            log.warn("Non-fatal: could not process waiting list promotion: {}", ex.getMessage());
+        }
 
         log.info("Booking {} successfully cancelled. Refund amount: {}", booking.getPnr(), refundAmount);
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Train, Clock, ArrowRight, ShieldCheck, Filter, AlertCircle, Calendar } from 'lucide-react';
+import { Train, Clock, ArrowRight, ShieldCheck, Filter, AlertCircle, Calendar, Radio } from 'lucide-react';
 import { trainAPI } from '../services/api';
 
 export default function SearchResultsPage() {
@@ -175,14 +175,25 @@ export default function SearchResultsPage() {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleBookNow(train, defaultCoach.coachType, defaultCoach.fare)}
-                      className="bg-orange-600 hover:bg-orange-700 active:scale-95 text-white font-bold text-sm px-5 py-2.5 rounded-xl shadow-sm transition flex items-center space-x-2"
-                    >
-                      <span>Book Ticket</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/live-status?train=${train.trainNumber}`)}
+                        className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 transition flex items-center space-x-1.5"
+                        title="View live GPS running status"
+                      >
+                        <Radio className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+                        <span>Live Status</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleBookNow(train, defaultCoach.coachType, defaultCoach.fare)}
+                        className="bg-orange-600 hover:bg-orange-700 active:scale-95 text-white font-bold text-sm px-5 py-2.5 rounded-xl shadow-sm transition flex items-center space-x-2"
+                      >
+                        <span>Book Ticket</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Class Availability & Booking Boxes */}

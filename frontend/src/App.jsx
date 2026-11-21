@@ -11,6 +11,7 @@ import PassengerDetailsPage from './pages/PassengerDetailsPage';
 import PaymentCheckoutPage from './pages/PaymentCheckoutPage';
 import BookingConfirmationPage from './pages/BookingConfirmationPage';
 import PnrEnquiryPage from './pages/PnrEnquiryPage';
+import LiveTrainStatusPage from './pages/LiveTrainStatusPage';
 import MyBookingsPage from './pages/MyBookingsPage';
 import AuthPage from './pages/AuthPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
@@ -29,6 +30,7 @@ export default function App() {
               <Route path="/payment/:bookingId" element={<PaymentCheckoutPage />} />
               <Route path="/booking/confirmation/:pnr" element={<BookingConfirmationPage />} />
               <Route path="/pnr-status" element={<PnrEnquiryPage />} />
+              <Route path="/live-status" element={<LiveTrainStatusPage />} />
               <Route path="/my-bookings" element={<MyBookingsPage />} />
               <Route path="/login" element={<AuthPage />} />
               <Route path="/register" element={<AuthPage />} />

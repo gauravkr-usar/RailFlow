@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { User, Plus, Trash2, ArrowRight, ShieldCheck, Lock } from 'lucide-react';
+import { User, Plus, Trash2, ArrowRight, ShieldCheck, Lock, Armchair, CheckCircle2 } from 'lucide-react';
 import { bookingAPI, generateIdempotencyKey } from '../services/api';
+import CoachSeatPicker from '../components/CoachSeatPicker';
 
 export default function PassengerDetailsPage() {
   const { trainId } = useParams();
@@ -21,6 +22,24 @@ export default function PassengerDetailsPage() {
   ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showSeatPicker, setShowSeatPicker] = useState(false);
+
+  const handleSeatConfirm = (selectedSeats) => {
+    const updated = passengers.map((p, idx) => {
+      if (selectedSeats[idx]) {
+        return {
+          ...p,
+          chosenSeatNumber: selectedSeats[idx].seatNumber,
+          chosenCoach: selectedSeats[idx].coach,
+          chosenBerthType: selectedSeats[idx].berthType,
+          berthPreference: selectedSeats[idx].berthType
+        };
+      }
+      return p;
+    });
+    setPassengers(updated);
+    setShowSeatPicker(false);
+  };
 
   const addPassenger = () => {
     if (passengers.length >= 6) {
@@ -65,7 +84,10 @@ export default function PassengerDetailsPage() {
         passengerName: p.name || 'Passenger ' + (idx + 1),
         age: parseInt(p.age, 10) || 28,
         gender: p.gender || 'MALE',
-        berthPreference: p.berthPreference || 'LOWER'
+        berthPreference: p.berthPreference || 'LOWER',
+        chosenSeatNumber: p.chosenSeatNumber,
+        chosenCoach: p.chosenCoach,
+        chosenBerthType: p.chosenBerthType
       })),
       idempotencyKey
     };
@@ -128,25 +150,47 @@ export default function PassengerDetailsPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Passenger Details Card */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+            <div className="flex flex-wrap items-center justify-between border-b border-slate-100 pb-4 mb-4 gap-2">
               <h3 className="text-base font-bold text-slate-900 flex items-center">
                 <User className="w-5 h-5 text-orange-500 mr-2" />
                 Passenger Details ({passengers.length}/6)
               </h3>
-              <button
-                type="button"
-                onClick={addPassenger}
-                className="inline-flex items-center text-xs font-semibold text-orange-600 hover:text-orange-700 bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-200"
-              >
-                <Plus className="w-4 h-4 mr-1" /> Add Passenger
-              </button>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSeatPicker(true)}
+                  className="inline-flex items-center text-xs font-semibold text-rail-navy hover:text-rail-navy-light bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 transition"
+                >
+                  <Armchair className="w-4 h-4 mr-1.5 text-blue-600" />
+                  <span>Choose Seats on Coach Map</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={addPassenger}
+                  className="inline-flex items-center text-xs font-semibold text-orange-600 hover:text-orange-700 bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-200"
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Add Passenger
+                </button>
+              </div>
             </div>
 
             <div className="space-y-4">
               {passengers.map((p, idx) => (
                 <div key={idx} className="p-4 rounded-lg bg-slate-50 border border-slate-200 relative">
                   <div className="flex justify-between items-center mb-3">
-                    <span className="text-xs font-bold text-slate-700">Passenger {idx + 1}</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs font-bold text-slate-700">Passenger {idx + 1}</span>
+                      {p.chosenSeatNumber ? (
+                        <span className="bg-emerald-100 text-emerald-800 text-[11px] font-mono px-2 py-0.5 rounded-md font-bold flex items-center space-x-1 border border-emerald-200">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span>Seat: {p.chosenCoach}-{p.chosenSeatNumber} ({p.chosenBerthType})</span>
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-[11px] italic">
+                          (Berth auto-assigned on checkout)
+                        </span>
+                      )}
+                    </div>
                     {passengers.length > 1 && (
                       <button
                         type="button"
@@ -228,6 +272,22 @@ export default function PassengerDetailsPage() {
             </button>
           </div>
         </form>
+
+        {showSeatPicker && (
+          <CoachSeatPicker
+            coachType={coachClass}
+            passengerCount={passengers.length}
+            currentAllocations={passengers
+              .filter(p => p.chosenSeatNumber)
+              .map(p => ({
+                seatNumber: p.chosenSeatNumber,
+                coach: p.chosenCoach,
+                berthType: p.chosenBerthType
+              }))}
+            onConfirm={handleSeatConfirm}
+            onClose={() => setShowSeatPicker(false)}
+          />
+        )}
       </div>
     </div>
   );

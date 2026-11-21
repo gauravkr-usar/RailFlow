@@ -83,11 +83,11 @@ export default function PaymentCheckoutPage() {
           name: p.name || p.passengerName || 'Passenger ' + (idx + 1),
           age: p.age || 26,
           gender: p.gender || 'MALE',
-          coachNumber: coachLetter + '1',
-          coach: coachLetter + '1',
-          seatNumber: 17 + idx * 3,
-          berthNumber: 17 + idx * 3,
-          berthType: p.berthPreference || (idx % 2 === 0 ? 'LOWER' : 'UPPER'),
+          coachNumber: p.chosenCoach || coachLetter + '1',
+          coach: p.chosenCoach || coachLetter + '1',
+          seatNumber: p.chosenSeatNumber || (17 + idx * 3),
+          berthNumber: p.chosenSeatNumber || (17 + idx * 3),
+          berthType: p.chosenBerthType || p.berthPreference || (idx % 2 === 0 ? 'LOWER' : 'UPPER'),
           status: 'CONFIRMED',
           currentStatus: 'CNF'
         }));
