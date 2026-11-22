@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Calendar, ArrowRightLeft, ShieldCheck, Zap, RefreshCw, Award, Train, Sparkles, MapPin } from 'lucide-react';
 import { trainAPI } from '../services/api';
+import StationAutocomplete from '../components/StationAutocomplete';
 
 const INITIAL_STATIONS = [
   { id: 1, code: 'NDLS', name: 'New Delhi', city: 'New Delhi', state: 'Delhi' },
@@ -96,23 +97,14 @@ export default function HomePage() {
                 
                 {/* Source Station */}
                 <div className="lg:col-span-4 bg-slate-50 p-3.5 rounded-2xl border border-slate-200 focus-within:border-rail-orange focus-within:bg-white transition-all">
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    From Station
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="w-5 h-5 text-rail-orange flex-shrink-0" />
-                    <select
-                      value={source}
-                      onChange={(e) => setSource(e.target.value)}
-                      className="w-full bg-transparent font-bold text-base text-slate-800 focus:outline-none cursor-pointer"
-                    >
-                      {stations.map((st) => (
-                        <option key={st.code} value={st.code}>
-                          {st.name} ({st.code}) - {st.city}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <StationAutocomplete
+                    label="From Station"
+                    value={source}
+                    onChange={(code) => setSource(code)}
+                    placeholder="Type station or city (e.g. New Delhi, Giridih)"
+                    iconColor="text-rail-orange"
+                    showRelevantTrains={true}
+                  />
                 </div>
 
                 {/* Swap Button */}
@@ -129,23 +121,14 @@ export default function HomePage() {
 
                 {/* Destination Station */}
                 <div className="lg:col-span-4 bg-slate-50 p-3.5 rounded-2xl border border-slate-200 focus-within:border-rail-orange focus-within:bg-white transition-all">
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    To Station
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                    <select
-                      value={destination}
-                      onChange={(e) => setDestination(e.target.value)}
-                      className="w-full bg-transparent font-bold text-base text-slate-800 focus:outline-none cursor-pointer"
-                    >
-                      {stations.map((st) => (
-                        <option key={st.code} value={st.code}>
-                          {st.name} ({st.code}) - {st.city}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <StationAutocomplete
+                    label="To Station"
+                    value={destination}
+                    onChange={(code) => setDestination(code)}
+                    placeholder="Type station or city (e.g. Varanasi, Howrah)"
+                    iconColor="text-emerald-600"
+                    showRelevantTrains={true}
+                  />
                 </div>
 
                 {/* Journey Date */}

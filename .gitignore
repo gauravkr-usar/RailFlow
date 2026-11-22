@@ -30,3 +30,7 @@ frontend/dist/
 
 # Spring Boot specific
 spring.log
+
+# Raw datasets
+list_of_stations.json
+dataset_stations/

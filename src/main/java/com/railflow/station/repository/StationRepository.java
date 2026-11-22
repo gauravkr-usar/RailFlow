@@ -18,7 +18,8 @@ public interface StationRepository extends JpaRepository<Station, Long> {
 
     @Query("SELECT s FROM Station s WHERE " +
            "LOWER(s.stationName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-           "LOWER(s.stationCode) LIKE LOWER(CONCAT('%', :query, '%'))")
+           "LOWER(s.stationCode) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(s.city) LIKE LOWER(CONCAT('%', :query, '%'))")
     Page<Station> searchByNameOrCode(@Param("query") String query, Pageable pageable);
 
     List<Station> findByIsActiveTrue();
