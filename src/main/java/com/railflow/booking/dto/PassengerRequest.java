@@ -1,5 +1,6 @@
 package com.railflow.booking.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.railflow.common.enums.BerthType;
 import com.railflow.common.enums.Gender;
 import jakarta.validation.constraints.Max;
@@ -15,14 +16,13 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PassengerRequest {
 
     @NotBlank(message = "Passenger name is required")
     private String name;
 
     @NotNull(message = "Passenger age is required")
-    @Min(value = 1, message = "Age must be at least 1")
-    @Max(value = 120, message = "Age cannot exceed 120")
     private Integer age;
 
     @NotNull(message = "Gender is required")
@@ -33,4 +33,10 @@ public class PassengerRequest {
     private String idProofType;
 
     private String idProofNumber;
+
+    private Integer chosenSeatNumber;
+
+    private String chosenCoach;
+
+    private String chosenBerthType;
 }

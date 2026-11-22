@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RailFlow — Master Architecture, Database Schema, Concurrency & System Guide</title>
+  <style>
+    :root {
+      --primary: #ea580c;
+      --primary-dark: #c2410c;
+      --navy: #0f172a;
+      --navy-light: #1e293b;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --emerald: #10b981;
+      --blue: #3b82f6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--slate-50);
+      color: var(--slate-800);
+      line-height: 1.6;
+      padding: 0;
+    }
+    header {
+      background: linear-gradient(135deg, var(--navy) 0%, #1e1b4b 100%);
+      color: white;
+      padding: 40px 20px;
+      border-bottom: 4px solid var(--primary);
+    }
+    .header-container {
+      max-width: 1200px;
+      margin: auto;
+    }
+    .badge {
+      display: inline-block;
+      background: var(--primary);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    h1 { font-size: 2.5rem; font-weight: 900; margin-bottom: 10px; }
+    h1 span { color: var(--primary); }
+    .subtitle { font-size: 1.1rem; color: #94a3b8; max-width: 800px; }
+    
+    .container {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
+    .nav-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 30px;
+      position: sticky;
+      top: 10px;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(8px);
+      padding: 10px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      z-index: 100;
+      border: 1px solid var(--slate-200);
+    }
+    .nav-tabs a {
+      color: var(--slate-700);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: var(--slate-100);
+      transition: all 0.2s;
+    }
+    .nav-tabs a:hover {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .section-card {
+      background: white;
+      border-radius: 16px;
+      border: 1px solid var(--slate-200);
+      padding: 32px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    }
+    h2 {
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 2px solid var(--slate-100);
+      padding-bottom: 12px;
+    }
+    h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--slate-800);
+      margin: 20px 0 10px 0;
+    }
+    p { margin-bottom: 14px; color: #475569; }
+    
+    pre {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 18px;
+      border-radius: 12px;
+      overflow-x: auto;
+      font-family: Consolas, Monaco, "Courier New", monospace;
+      font-size: 13px;
+      margin: 16px 0;
+      line-height: 1.5;
+    }
+    code {
+      font-family: Consolas, Monaco, monospace;
+      background: #f1f5f9;
+      color: var(--primary-dark);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    pre code { background: transparent; color: inherit; padding: 0; }
+    
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin: 20px 0; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin: 20px 0; }
+    
+    .feature-box {
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 20px;
+      background: var(--slate-50);
+      border-left: 4px solid var(--primary);
+    }
+    .feature-box.blue { border-left-color: var(--blue); }
+    .feature-box.emerald { border-left-color: var(--emerald); }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 13px;
+    }
+    th, td {
+      border: 1px solid var(--slate-200);
+      padding: 10px 14px;
+      text-align: left;
+    }
+    th {
+      background: var(--slate-100);
+      color: var(--navy);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+    }
+    tr:nth-child(even) { background: #fafafa; }
+    
+    .flow-step {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+      align-items: flex-start;
+    }
+    .flow-num {
+      width: 32px;
+      height: 32px;
+      background: var(--navy);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .flow-content {
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 10px;
+      padding: 14px 18px;
+      flex-grow: 1;
+    }
+    
+    .qa-box {
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .qa-q { font-weight: 800; color: var(--navy); font-size: 15px; margin-bottom: 8px; }
+    .qa-a { color: #334155; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-container">
+    <span class="badge">Enterprise IRCTC-Grade Architecture</span>
+    <h1>Rail<span>Flow</span> Master Architecture & System Manual</h1>
+    <p class="subtitle">Complete technical specification covering Docker orchestration, Redis distributed locking, Apache Kafka event bus, Idempotency patterns, PostgreSQL relational schema, and Viva Voce questions.</p>
+  </div>
+</header>
+
+<div class="container">
+  <nav class="nav-tabs">
+    <a href="#architecture">1. System Architecture</a>
+    <a href="#core-tech">2. Docker, Redis, Kafka, Idempotency & Roles</a>
+    <a href="#dynamic-static">3. Dynamic vs Static Data</a>
+    <a href="#database-schema">4. Database Schema (27 Tables)</a>
+    <a href="#data-flow">5. End-to-End Data Flow</a>
+    <a href="#viva-questions">6. Viva Voce Questions & Answers</a>
+  </nav>
+
+  <!-- SECTION 1 -->
+  <div id="architecture" class="section-card">
+    <h2>1. High-Level Architectural Blueprint</h2>
+    <p>RailFlow utilizes a <strong>decoupled, event-driven, micro-modular architecture</strong> engineered to eliminate single-point failures, prevent database lock contention during Tatkal rushes, and guarantee financial idempotency.</p>
+    
+    <pre>
+                                  +-----------------------------------------------+
+                                  |              React 18 SPA (Vite)              |
+                                  |   - Interactive 2D Coach Seat Visualizer      |
+                                  |   - Live GPS Satellite Running Status Tracker |
+                                  |   - PNR 4-Stage Charting Lifecycle Monitor    |
+                                  |   - 5-Tab Admin Operations Console            |
+                                  +-----------------------------------------------+
+                                                          |
+                                              HTTPS / JSON REST APIs
+                                           (JWT Bearer Auth & Idempotency)
+                                                          |
+                                                          v
+                                  +-----------------------------------------------+
+                                  |         Nginx / Vite Reverse Proxy            |
+                                  |         - Asset Gzip & SPA Fallbacks          |
+                                  |         - Proxies /api/ -> Spring Boot:8080   |
+                                  +-----------------------------------------------+
+                                                          |
+                                                          v
++-------------------------------------------------------------------------------------------------------------------------+
+|                                              Spring Boot 3.2.5 Backend Runtime Layer                                    |
+|                                                                                                                         |
+|  [Security Chain: JwtAuthenticationFilter] ---> [REST Controllers] ---> [Service Layer (@Transactional)]                |
+|                                                                                   |                                     |
+|             +----------------------------------+----------------------------------+-------------------------------+     |
+|             |                                  |                                  |                               |     |
+|             v                                  v                                  v                               v     |
+|  [Redisson Concurrency Engine]     [Spring Data JPA Repositories]      [Kafka Event Producers]          [OpenPDF /      |
+|  - RLock Distributed Locks         - HikariCP Connection Pool (20)     - booking-confirmed-events       ZXing QR Engine]|
+|  - Inventory TTL Seat Holds        - Relational CRUD on Postgres 16    - booking-cancelled-events       - Binary ERS    |
+|  - Redisson Fair Lock Queues       - Optimistic Locking (@Version)     - payment-successful-events      - 2D QR Code    |
++-------------------------------------------------------------------------------------------------------------------------+
+              |                                  |                                  |
+              v                                  v                                  v
++-----------------------------+    +-----------------------------+    +---------------------------------------------------+
+|            Redis 7          |    |        PostgreSQL 16        |    |            Apache Kafka & Zookeeper               |
+|      (Host Port: 6379)      |    |      (Host Port: 5432)      |    |        (Ports: Zookeeper 2181, Kafka 9092)        |
+| - Distributed Lock Tokens   |    | - 27 Relational Tables      |    +---------------------------------------------------+
+| - 10-Minute Seat Hold TTL   |    | - ACID Ledgers & Bookings   |    | - Asynchronous Notification Workers               |
+| - Route & Schedule Caching  |    | - Flyway Schema Versioning  |    | - Real-time Waiting List Auto-Promotion Pipeline  |
++-----------------------------+    +-----------------------------+    +---------------------------------------------------+
+    </pre>
+  </div>
+
+  <!-- SECTION 2 -->
+  <div id="core-tech" class="section-card">
+    <h2>2. Deep-Dive: Docker, Redis, Kafka, Idempotency & Roles</h2>
+
+    <div class="grid-2">
+      <!-- DOCKER -->
+      <div class="feature-box blue">
+        <h3>🐳 1. Docker & Container Orchestration</h3>
+        <p><strong>Where it is used:</strong> Full local dev stack (<code>docker-compose.yml</code>) and multi-stage production deployment (<code>docker-compose.prod.yml</code>).</p>
+        <p><strong>How they are connected:</strong></p>
+        <ul>
+          <li><strong>PostgreSQL 16:</strong> Port 5432 with health check (<code>pg_isready</code>). Stores all ACID entities.</li>
+          <li><strong>Redis 7:</strong> Port 6379 with health check (<code>redis-cli ping</code>). Acts as lock coordinator and cache.</li>
+          <li><strong>Zookeeper & Kafka:</strong> Port 2181 & 9092. Orchestrates partitions and consumer offset synchronization.</li>
+          <li><strong>Spring Boot Backend:</strong> Multi-stage build (<code>maven:3.9.6-eclipse-temurin-21-alpine</code> ➔ <code>eclipse-temurin:21-jre-alpine</code>). Runs under an unprivileged user <code>railflow</code>.</li>
+          <li><strong>React Frontend:</strong> Multi-stage build (<code>node:20-alpine</code> ➔ <code>nginx:1.25-alpine</code>). Reverse-proxies <code>/api/</code> to <code>backend:8080</code>.</li>
+        </ul>
+      </div>
+
+      <!-- REDIS -->
+      <div class="feature-box emerald">
+        <h3>⚡ 2. Redis & Redisson Concurrency Engine</h3>
+        <p><strong>Where it is used:</strong> <code>SeatInventoryService.java</code>, <code>IdempotencyService.java</code>, and route caching.</p>
+        <p><strong>How it works:</strong></p>
+        <ul>
+          <li><strong>Distributed Locking (RLock):</strong> When thousands hit Tatkal at once, Redisson acquires a fair lock on key <code>lock:inventory:{trainId}:{journeyDate}:{coachType}</code> in Redis memory.</li>
+          <li><strong>Seat Hold Sliding TTL:</strong> When a user holds a berth, a temporary hold key is set in Redis with 10-minute TTL (<code>expires_at = now() + 10m</code>). If the user abandons checkout, the hold naturally expires and is reclaimed.</li>
+          <li><strong>Idempotency L1 Cache:</strong> Caches responses for key <code>idempotency:{key}</code> with 24-hour TTL for instant sub-millisecond duplicate interception.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- KAFKA -->
+      <div class="feature-box">
+        <h3>📨 3. Apache Kafka & Transactional Outbox</h3>
+        <p><strong>Where it is used:</strong> Asynchronous event messaging between Booking, Payment, Notification, and Waiting List services.</p>
+        <p><strong>How they are connected & data flows:</strong></p>
+        <ul>
+          <li><strong>Transactional Outbox:</strong> Instead of making network calls during payment/booking, Spring Boot inserts an event into PostgreSQL table <code>outbox_events</code> within the same ACID transaction.</li>
+          <li><strong>Outbox Publisher Job:</strong> <code>OutboxPublisherJob.java</code> runs every 5 seconds, reads <code>PENDING</code> events, publishes to Kafka topics, and marks them <code>PUBLISHED</code>.</li>
+          <li><strong>Kafka Topics:</strong>
+            <ul>
+              <li><code>booking-confirmed-events</code>: Consumed by <code>BookingEventConsumer</code> to generate binary PDF tickets via OpenPDF and send confirmation emails.</li>
+              <li><code>booking-cancelled-events</code>: Consumed to trigger passenger refund ledgers and auto-promote waitlisted passengers.</li>
+            </ul>
+          </li>
+          <li><strong>Consumer Groups:</strong> <code>railflow-notification-group</code> handles load balancing and partition reassignment across nodes.</li>
+        </ul>
+      </div>
+
+      <!-- IDEMPOTENCY & ROLES -->
+      <div class="feature-box blue">
+        <h3>🔑 4. Idempotency & Role-Based Access Control (RBAC)</h3>
+        <p><strong>Idempotency Engine (<code>IdempotencyService.java</code>):</strong></p>
+        <ul>
+          <li>Frontend transmits header <code>Idempotency-Key: idem_uuid</code> on every write request.</li>
+          <li>Backend checks Redis L1 cache first; if absent, checks PostgreSQL <code>idempotency_records</code> table.</li>
+          <li>If key is <code>COMPLETED</code>, returns cached response immediately. If <code>PROCESSING</code>, rejects concurrent duplicate (409 Conflict). If new, registers key and executes request.</li>
+        </ul>
+        <p><strong>Roles & RBAC Architecture:</strong></p>
+        <ul>
+          <li>Table <code>roles</code> stores <code>ROLE_USER</code> and <code>ROLE_ADMIN</code>. Table <code>user_roles</code> maps user IDs.</li>
+          <li>Spring Security intercepts every request in <code>JwtAuthenticationFilter</code>, extracts claims, and populates <code>SecurityContext</code>.</li>
+          <li>Protected endpoints use method-level security: <code>@PreAuthorize("hasRole('ADMIN')")</code> on <code>AdminController</code> and train fleet creation.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3 -->
+  <div id="dynamic-static" class="section-card">
+    <h2>3. Dynamic vs. Static Data Specification</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Component</th>
+          <th>Type</th>
+          <th>Storage / Source</th>
+          <th>Operational Lifecycle</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Identity</strong></td>
+          <td>Default Admin & User (Admin@1234, User@1234)</td>
+          <td><span style="color: #64748b; font-weight: bold;">Static Seed</span></td>
+          <td><code>V2__seed_initial_data.sql</code></td>
+          <td>Pre-seeded with 12-round BCrypt hashes for testing.</td>
+        </tr>
+        <tr>
+          <td><strong>Identity</strong></td>
+          <td>New Registered Passengers</td>
+          <td><span style="color: #10b981; font-weight: bold;">Dynamic</span></td>
+          <td>PostgreSQL <code>users</code></td>
+          <td>Created on-the-fly via <code>POST /api/v1/auth/register</code>.</td>
+        </tr>
+        <tr>
+          <td><strong>Stations</strong></td>
+          <td>10 Master Junctions (NDLS, BSB, MMCT, HWH, etc.)</td>
+          <td><span style="color: #64748b; font-weight: bold;">Static Seed</span></td>
+          <td>PostgreSQL <code>stations</code></td>
+          <td>Pre-loaded with coordinates and zone codes.</td>
+        </tr>
+        <tr>
+          <td><strong>Stations</strong></td>
+          <td>Admin-Created New Stations</td>
+          <td><span style="color: #10b981; font-weight: bold;">Dynamic</span></td>
+          <td>PostgreSQL <code>stations</code></td>
+          <td>Commissioned via Admin Portal <code>POST /api/v1/stations</code>.</td>
+        </tr>
+        <tr>
+          <td><strong>Fleet</strong></td>
+          <td>4 Master Trains (12302, 22436, 12952, 12560)</td>
+          <td><span style="color: #64748b; font-weight: bold;">Static Seed</span></td>
+          <td>PostgreSQL <code>trains</code></td>
+          <td>Initial blueprints for Rajdhani, Vande Bharat, etc.</td>
+        </tr>
+        <tr>
+          <td><strong>Inventory</strong></td>
+          <td>Seat Availability & Distributed Locks</td>
+          <td><span style="color: #10b981; font-weight: bold;">Dynamic</span></td>
+          <td>Redis & <code>seat_inventory</code></td>
+          <td>Decremented in real time; protected by Redisson <code>RLock</code>.</td>
+        </tr>
+        <tr>
+          <td><strong>Booking</strong></td>
+          <td>PNR, Ticket Records & Passenger Allotments</td>
+          <td><span style="color: #10b981; font-weight: bold;">Dynamic</span></td>
+          <td>PostgreSQL <code>bookings</code></td>
+          <td>Generated on checkout; berths assigned via Coach Seat Picker.</td>
+        </tr>
+        <tr>
+          <td><strong>Payments</strong></td>
+          <td>Razorpay Orders & Signatures</td>
+          <td><span style="color: #10b981; font-weight: bold;">Dynamic</span></td>
+          <td>PostgreSQL <code>payments</code></td>
+          <td>HMAC-SHA256 signature calculated and verified per order.</td>
+        </tr>
+        <tr>
+          <td><strong>Events</strong></td>
+          <td>Kafka Notification Events & Promotion Queue</td>
+          <td><span style="color: #10b981; font-weight: bold;">Dynamic</span></td>
+          <td>Kafka Topics & <code>outbox_events</code></td>
+          <td>Streamed on booking, cancellation, and WL promotion.</td>
+        </tr>
+        <tr>
+          <td><strong>Fallback</strong></td>
+          <td>Offline Route Calculation Generator</td>
+          <td><span style="color: #64748b; font-weight: bold;">Static Fallback</span></td>
+          <td><code>frontend/src/services/api.js</code></td>
+          <td>Used only if backend PostgreSQL connection is unavailable.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 4 -->
+  <div id="database-schema" class="section-card">
+    <h2>4. PostgreSQL Database Schema Encyclopedia (All 27 Tables)</h2>
+    <p>Every table, foreign key relationship, and constraint defined in <code>V1__initial_schema.sql</code>:</p>
+
+    <h3>Group 1: Authentication & Identity (6 Tables)</h3>
+    <table>
+      <thead>
+        <tr><th>Table Name</th><th>Columns (Name, Type, Constraints)</th><th>Relationships & Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>roles</code></td>
+          <td>id (BIGSERIAL PK), name (VARCHAR(50) UNIQUE)</td>
+          <td>Stores system roles (<code>ROLE_USER</code>, <code>ROLE_ADMIN</code>).</td>
+        </tr>
+        <tr>
+          <td><code>users</code></td>
+          <td>id (BIGSERIAL PK), first_name (VARCHAR(100)), last_name (VARCHAR(100)), email (VARCHAR(150) UNIQUE), password_hash (VARCHAR(255)), phone_number (VARCHAR(20)), date_of_birth (DATE), is_enabled (BOOLEAN), is_email_verified (BOOLEAN), version (BIGINT), created_at, updated_at</td>
+          <td>Core passenger and administrator credentials with BCrypt hashes.</td>
+        </tr>
+        <tr>
+          <td><code>user_roles</code></td>
+          <td>user_id (BIGINT FK->users), role_id (BIGINT FK->roles), PRIMARY KEY (user_id, role_id)</td>
+          <td>Many-to-Many mapping table for RBAC.</td>
+        </tr>
+        <tr>
+          <td><code>refresh_tokens</code></td>
+          <td>id (BIGSERIAL PK), token (VARCHAR(500) UNIQUE), user_id (BIGINT FK->users), expiry_date (TIMESTAMP), is_revoked (BOOLEAN)</td>
+          <td>7-day JWT refresh tokens with revocation support.</td>
+        </tr>
+        <tr>
+          <td><code>otp_records</code></td>
+          <td>id (BIGSERIAL PK), email (VARCHAR(150)), otp (VARCHAR(10)), purpose (VARCHAR(50)), expires_at (TIMESTAMP), is_used (BOOLEAN), created_at</td>
+          <td>One-time passwords for password recovery and verification.</td>
+        </tr>
+        <tr>
+          <td><code>idempotency_records</code></td>
+          <td>id (BIGSERIAL PK), idempotency_key (VARCHAR(100) UNIQUE), request_hash (VARCHAR(255)), response (TEXT), status (VARCHAR(30)), created_at, expires_at</td>
+          <td>Deduplication table storing responses to prevent duplicate charges.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Group 2: Fleet, Stations & Route Scheduling (8 Tables)</h3>
+    <table>
+      <thead>
+        <tr><th>Table Name</th><th>Columns</th><th>Relationships & Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>stations</code></td>
+          <td>id (BIGSERIAL PK), station_code (VARCHAR(10) UNIQUE), station_name (VARCHAR(150)), city (VARCHAR(100)), state (VARCHAR(100)), latitude (DOUBLE), longitude (DOUBLE), zone_code (VARCHAR(10)), is_active (BOOLEAN), created_at, updated_at</td>
+          <td>Railway junctions across Indian Railway zones.</td>
+        </tr>
+        <tr>
+          <td><code>trains</code></td>
+          <td>id (BIGSERIAL PK), train_number (VARCHAR(20) UNIQUE), train_name (VARCHAR(150)), train_type (VARCHAR(50)), source_station_id (FK->stations), destination_station_id (FK->stations), departure_time (TIME), arrival_time (TIME), total_distance (INT), is_active (BOOLEAN), created_at, updated_at</td>
+          <td>Express and superfast train blueprints.</td>
+        </tr>
+        <tr>
+          <td><code>train_running_days</code></td>
+          <td>train_id (FK->trains), day_of_week (VARCHAR(20)), PRIMARY KEY (train_id, day_of_week)</td>
+          <td>Specifies operating days (e.g. MONDAY, TUESDAY).</td>
+        </tr>
+        <tr>
+          <td><code>coaches</code></td>
+          <td>id (BIGSERIAL PK), train_id (FK->trains), coach_number (VARCHAR(10)), coach_type (VARCHAR(20)), total_seats (INT), is_active (BOOLEAN), UNIQUE(train_id, coach_number)</td>
+          <td>Physical coaches assigned to a train (C1, B1, A1).</td>
+        </tr>
+        <tr>
+          <td><code>seats</code></td>
+          <td>id (BIGSERIAL PK), coach_id (FK->coaches), seat_number (INT), berth_type (VARCHAR(30)), is_active (BOOLEAN), UNIQUE(coach_id, seat_number)</td>
+          <td>Individual seats with berth types (LOWER, WINDOW, etc.).</td>
+        </tr>
+        <tr>
+          <td><code>train_routes</code></td>
+          <td>id (BIGSERIAL PK), train_id (FK->trains UNIQUE)</td>
+          <td>Master route identity per train.</td>
+        </tr>
+        <tr>
+          <td><code>route_stations</code></td>
+          <td>id (BIGSERIAL PK), train_route_id (FK->train_routes), station_id (FK->stations), sequence_number (INT), arrival_time (TIME), departure_time (TIME), distance_from_source (INT), day_offset (INT), platform_number (VARCHAR(10)), UNIQUE(train_route_id, sequence_number)</td>
+          <td>Ordered stops along a route for segment availability search.</td>
+        </tr>
+        <tr>
+          <td><code>train_schedules</code> & <code>train_runs</code></td>
+          <td>id (BIGSERIAL PK), train_id (FK->trains), journey_date (DATE), status (VARCHAR(30)), delay_minutes (INT), remarks</td>
+          <td>Tracks daily operational schedule status and delays.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Group 3: Concurrency, Inventory & Seat Holds (3 Tables)</h3>
+    <table>
+      <thead>
+        <tr><th>Table Name</th><th>Columns</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>seat_inventory</code></td>
+          <td>id (BIGSERIAL PK), train_id (FK->trains), coach_id (FK->coaches), seat_id (FK->seats), source_station_id (FK->stations), destination_station_id (FK->stations), journey_date (DATE), coach_type (VARCHAR(20)), status (VARCHAR(20)), fare (NUMERIC), hold_expiry (TIMESTAMP), booking_id (BIGINT), version (BIGINT)</td>
+          <td>Segment-based seat availability tracking across station stops.</td>
+        </tr>
+        <tr>
+          <td><code>seat_holds</code></td>
+          <td>id (BIGSERIAL PK), hold_token (VARCHAR(100) UNIQUE), user_id (BIGINT), journey_date (DATE), train_id (BIGINT), source_station_id (BIGINT), dest_station_id (BIGINT), coach_type (VARCHAR(20)), expires_at (TIMESTAMP), is_released (BOOLEAN), created_at</td>
+          <td>Temporary 10-minute hold token during checkout.</td>
+        </tr>
+        <tr>
+          <td><code>seat_hold_inventories</code></td>
+          <td>seat_hold_id (FK->seat_holds), inventory_id (BIGINT), PRIMARY KEY (seat_hold_id, inventory_id)</td>
+          <td>Mapping between hold tokens and inventory units.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h3>Group 4: Bookings, Payments, Refunds & Outbox (10 Tables)</h3>
+    <table>
+      <thead>
+        <tr><th>Table Name</th><th>Columns</th><th>Purpose</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>passengers</code></td>
+          <td>id (BIGSERIAL PK), user_id (FK->users), name (VARCHAR(150)), age (INT), gender (VARCHAR(20)), id_proof_type (VARCHAR(50)), id_proof_number (VARCHAR(100)), is_active (BOOLEAN)</td>
+          <td>Passenger manifest records.</td>
+        </tr>
+        <tr>
+          <td><code>bookings</code></td>
+          <td>id (BIGSERIAL PK), pnr (VARCHAR(20) UNIQUE), user_id (FK->users), train_id (FK->trains), source_station_id (FK->stations), destination_station_id (FK->stations), journey_date (DATE), coach_type (VARCHAR(20)), status (VARCHAR(30)), total_fare (NUMERIC), hold_token (VARCHAR(100)), idempotency_key (VARCHAR(100)), version (BIGINT)</td>
+          <td>Master booking records with unique 10-digit PNR.</td>
+        </tr>
+        <tr>
+          <td><code>booking_passengers</code></td>
+          <td>id (BIGSERIAL PK), booking_id (FK->bookings), passenger_id (FK->passengers), seat_inventory_id (BIGINT), coach_number (VARCHAR(10)), seat_number (INT), berth_type (VARCHAR(30)), status (VARCHAR(30)), waiting_list_number (INT), rac_number (INT), fare (NUMERIC)</td>
+          <td>Passenger-level ticket allocations (Coach C1, Seat 17).</td>
+        </tr>
+        <tr>
+          <td><code>payments</code></td>
+          <td>id (BIGSERIAL PK), booking_id (FK->bookings), razorpay_order_id (VARCHAR(100) UNIQUE), razorpay_payment_id (VARCHAR(100)), razorpay_signature (VARCHAR(255)), amount (NUMERIC), currency (VARCHAR(10)), status (VARCHAR(30)), payment_method (VARCHAR(30)), failure_reason, attempt_count, webhook_processed (BOOLEAN), idempotency_key</td>
+          <td>Razorpay financial transactions and webhook state.</td>
+        </tr>
+        <tr>
+          <td><code>refunds</code></td>
+          <td>id (BIGSERIAL PK), payment_id (FK->payments), booking_id (FK->bookings), refund_amount (NUMERIC), razorpay_refund_id (VARCHAR(100)), status (VARCHAR(30)), reason (VARCHAR(255)), initiated_at, completed_at</td>
+          <td>Disbursement ledger for cancelled ticket refunds.</td>
+        </tr>
+        <tr>
+          <td><code>cancellations</code></td>
+          <td>id (BIGSERIAL PK), booking_id (FK->bookings UNIQUE), cancelled_by (BIGINT), cancellation_time (TIMESTAMP), reason (VARCHAR(255)), original_fare (NUMERIC), cancellation_charges (NUMERIC), refund_amount (NUMERIC), refund_id (FK->refunds), cancellation_rule</td>
+          <td>Audit log of cancellation penalty deductions.</td>
+        </tr>
+        <tr>
+          <td><code>waiting_lists</code></td>
+          <td>id (BIGSERIAL PK), booking_id (FK->bookings), passenger_id (FK->passengers), train_id (BIGINT), journey_date (DATE), coach_type (VARCHAR(20)), position (INT), status (VARCHAR(30))</td>
+          <td>FIFO waiting queue for auto-promotion on cancellation.</td>
+        </tr>
+        <tr>
+          <td><code>notifications</code></td>
+          <td>id (BIGSERIAL PK), user_id (BIGINT), recipient (VARCHAR(150)), type (VARCHAR(50)), subject (VARCHAR(255)), content (TEXT), status (VARCHAR(30)), retry_count (INT), sent_at</td>
+          <td>Email and SMS dispatch audit log.</td>
+        </tr>
+        <tr>
+          <td><code>outbox_events</code></td>
+          <td>id (BIGSERIAL PK), aggregate_type (VARCHAR(100)), aggregate_id (VARCHAR(100)), event_type (VARCHAR(100)), payload (TEXT), status (VARCHAR(30)), created_at, processed_at</td>
+          <td>Transactional outbox table for reliable Kafka publishing.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 5 -->
+  <div id="data-flow" class="section-card">
+    <h2>5. End-to-End Operational Data Flow</h2>
+    
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-content">
+        <strong>Train Search:</strong> Client queries <code>GET /api/v1/trains/search?from=NDLS&to=BSB&date=2026-11-25</code>.
+        <br>Backend checks route stations, running days, queries <code>seat_inventory</code>, and returns live fares and coach availability.
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-content">
+        <strong>Coach Seat Selection:</strong> Passenger opens <code>CoachSeatPicker.jsx</code>, selects Coach C1 Seat 15 (Window).
+        <br>Passenger details are attached with <code>chosenCoach</code> and <code>chosenSeatNumber</code>.
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-content">
+        <strong>Seat Hold & Distributed Lock:</strong> Client submits <code>POST /api/v1/bookings</code> with header <code>Idempotency-Key</code>.
+        <br>Backend acquires Redisson lock: <code>lock:inventory:2:2026-11-25:CC</code>.
+        <br>Decrements inventory, creates 10-minute <code>SeatHold</code> in PostgreSQL + Redis, creates Booking (<code>PAYMENT_PENDING</code>, PNR generated), and releases lock.
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-content">
+        <strong>Payment & Webhook Verification:</strong> Client calls <code>POST /api/v1/payments/create-order</code> then <code>/payments/verify</code>.
+        <br>Backend verifies HMAC-SHA256 signature, transitions payment to <code>SUCCESS</code>, confirms booking in PostgreSQL, and inserts event into <code>outbox_events</code>.
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-content">
+        <strong>Kafka Streaming & PDF Dispatch:</strong> <code>OutboxPublisherJob</code> polls pending events and publishes to Kafka <code>booking-confirmed-events</code>.
+        <br><code>BookingEventConsumer</code> receives event, generates binary PDF ticket via OpenPDF + ZXing QR, and sends email notification.
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="flow-num">6</div>
+      <div class="flow-content">
+        <strong>Cancellation & WL Auto-Promotion:</strong> When a confirmed booking is cancelled:
+        <br>Backend calculates cancellation fee (IRCTC rules), updates status to <code>CANCELLED</code>, and calls <code>WaitingListService</code>.
+        <br>Eligible passengers in <code>waiting_lists</code> are promoted (<code>WL ➔ RAC ➔ CONFIRMED</code>), claiming vacated berths automatically!
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 6 -->
+  <div id="viva-questions" class="section-card">
+    <h2>6. Comprehensive Technical Viva Voce Q&A Master List</h2>
+
+    <div class="qa-box">
+      <div class="qa-q">Q1: How does RailFlow prevent the double-booking problem during high-concurrency Tatkal rush?</div>
+      <div class="qa-a"><strong>Answer:</strong> RailFlow avoids database row lock bottlenecks by using <strong>Redisson Distributed Locks (<code>RLock</code>)</strong> on Redis. Before inventory is decremented, the thread acquires a fair lock on key <code>lock:inventory:{trainId}:{date}:{coachType}</code> with a 3-second wait time and 5-second lease time. Only the lock holder modifies inventory, holds the seat with a 10-minute TTL, and immediately releases the lock, serializing requests at memory speed without database deadlocks.</div>
+    </div>
+
+    <div class="qa-box">
+      <div class="qa-q">Q2: What is the Transactional Outbox Pattern and why is it used with Kafka?</div>
+      <div class="qa-a"><strong>Answer:</strong> The Transactional Outbox pattern solves the dual-write problem (writing to a database and publishing to Kafka simultaneously). Instead of directly calling Kafka during a user request (which could fail if Kafka is down while the DB commit succeeded), Spring Boot saves the event into the <code>outbox_events</code> table within the same database transaction. A background scheduler (<code>OutboxPublisherJob</code>) polls pending events and streams them to Kafka, ensuring guaranteed <strong>At-Least-Once Delivery</strong>.</div>
+    </div>
+
+    <div class="qa-box">
+      <div class="qa-q">Q3: How does the Idempotency mechanism prevent duplicate bookings and payments?</div>
+      <div class="qa-a"><strong>Answer:</strong> The client generates a unique UUID (<code>Idempotency-Key</code>) and passes it in the request header. <code>IdempotencyService</code> checks Redis cache first (24h TTL) and falls back to PostgreSQL <code>idempotency_records</code>. If the key exists with status <code>COMPLETED</code>, it returns the cached response immediately without re-executing booking logic. If a request with the same key is currently <code>PROCESSING</code>, it blocks duplicate execution, preventing double-charges on rapid double-clicks.</div>
+    </div>
+
+    <div class="qa-box">
+      <div class="qa-q">Q4: How does RailFlow manage Role-Based Access Control (RBAC) securely?</div>
+      <div class="qa-a"><strong>Answer:</strong> RailFlow stores roles in a separate <code>roles</code> table (<code>ROLE_USER</code>, <code>ROLE_ADMIN</code>) joined via <code>user_roles</code>. When a user authenticates, <code>JwtTokenProvider</code> encodes the granted authorities into the JWT claims payload. For every request, <code>JwtAuthenticationFilter</code> validates the token and populates Spring's <code>SecurityContext</code>. Controllers enforce access using <code>@PreAuthorize("hasRole('ADMIN')")</code>, while the frontend dynamically gates administrative views based on the decoded token.</div>
+    </div>
+
+    <div class="qa-box">
+      <div class="qa-q">Q5: How does the Automated Waiting List (WL) Promotion Engine work?</div>
+      <div class="qa-a"><strong>Answer:</strong> In <code>CancellationService.java</code>, whenever a confirmed ticket is cancelled, the service invokes <code>WaitingListService.promoteEligiblePassengers()</code> with the number of released berths. It queries the <code>waiting_lists</code> FIFO queue ordered by position, promotes RAC passengers to CONFIRMED, promotes WAITING_LIST passengers to RAC or CONFIRMED, updates their passenger status, and emits a Kafka notification event.</div>
+    </div>
+
+    <div class="qa-box">
+      <div class="qa-q">Q6: How does RailFlow's multi-stage Docker deployment optimize performance and security?</div>
+      <div class="qa-a"><strong>Answer:</strong>
+        <ul>
+          <li><strong>Backend:</strong> Stage 1 uses full Maven to compile the jar; Stage 2 copies only the final jar to a minimal <code>eclipse-temurin:21-jre-alpine</code> image (180MB) and executes under an unprivileged user <code>railflow</code> with container memory limits (<code>-XX:MaxRAMPercentage=75.0</code>).</li>
+          <li><strong>Frontend:</strong> Stage 1 uses Node 20 to generate optimized Vite bundles; Stage 2 serves the assets via Nginx Alpine with Gzip compression, client-side routing fallback (<code>try_files $uri /index.html;</code>), and reverse-proxies <code>/api/</code> to the Spring Boot backend.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -466,25 +466,7 @@ export const bookingAPI = {
       const parsed = JSON.parse(latest);
       if (parsed.pnr === pnr) return parsed;
     }
-    return {
-      id: 991,
-      pnr: pnr,
-      status: 'CONFIRMED',
-      trainNumber: '22436',
-      trainName: 'Vande Bharat Express',
-      sourceStationCode: 'NDLS',
-      sourceStationName: 'New Delhi',
-      destinationStationCode: 'BSB',
-      destinationStationName: 'Varanasi Junction',
-      journeyDate: new Date().toISOString().split('T')[0],
-      departureTime: '06:00:00',
-      arrivalTime: '14:00:00',
-      coachType: 'CC',
-      totalFare: 1750,
-      passengers: [
-        { id: 1, passengerName: 'Gaurav Kumar', name: 'Gaurav Kumar', age: 26, gender: 'MALE', coachNumber: 'C1', seatNumber: 15, berthType: 'WINDOW', status: 'CONFIRMED' }
-      ]
-    };
+    throw new Error('PNR not found or invalid');
   },
   getBookingByPnr: async (pnr) => {
     return bookingAPI.getByPnr(pnr);
@@ -741,11 +723,13 @@ export const adminAPI = {
       };
     }
   },
-  getBookings: async () => {
+  getBookings: async (page = 0, size = 50) => {
     try {
-      const res = await api.get('/admin/bookings');
-      return res.data?.data || res.data || [];
-    } catch {
+      const res = await api.get('/admin/bookings', { params: { page, size } });
+      const data = res.data?.data || res.data?.content || res.data;
+      return Array.isArray(data) ? data : (data?.content || []);
+    } catch (e) {
+      console.warn("adminAPI.getBookings error:", e);
       return [];
     }
   },
@@ -768,22 +752,6 @@ export const adminAPI = {
   },
   toggleUserStatus: async (userId, enabled) => {
     return api.put(`/admin/users/${userId}/status?enabled=${enabled}`);
-  },
-  getBookings: async (page = 0, size = 10) => {
-    try {
-      const res = await api.get('/admin/bookings', { params: { page, size } });
-      return res.data;
-    } catch {
-      return {
-        content: [
-          { id: 1, pnr: '2847291048', trainNumber: '12952', sourceStation: 'NDLS', destinationStation: 'CSMT', journeyDate: '2026-11-20', totalFare: 4850, status: 'CONFIRMED' },
-          { id: 2, pnr: '6192837401', trainNumber: '12138', sourceStation: 'NDLS', destinationStation: 'CSMT', journeyDate: '2026-11-21', totalFare: 1300, status: 'CONFIRMED' },
-          { id: 3, pnr: '8392019482', trainNumber: '22222', sourceStation: 'NDLS', destinationStation: 'CSMT', journeyDate: '2026-11-22', totalFare: 2110, status: 'WAITLISTED' }
-        ],
-        totalPages: 1,
-        totalElements: 3
-      };
-    }
   },
   getHealth: async () => {
     try {
