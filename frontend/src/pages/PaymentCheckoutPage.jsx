@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { ShieldCheck, Clock, CreditCard, Smartphone, Building, CheckCircle2, Lock } from 'lucide-react';
+import { ShieldCheck, Clock, CreditCard, Smartphone, Building, CheckCircle2, Lock, User, Users } from 'lucide-react';
 import { paymentAPI } from '../services/api';
 
 export default function PaymentCheckoutPage() {
@@ -15,6 +15,26 @@ export default function PaymentCheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState('UPI');
   const [upiId, setUpiId] = useState('user@okaxis');
   const [processing, setProcessing] = useState(false);
+  const [activeBooking, setActiveBooking] = useState(null);
+
+  // Authentication check
+  useEffect(() => {
+    const token = localStorage.getItem('railflow_token');
+    if (!token) {
+      const currentUrl = window.location.pathname + window.location.search;
+      navigate(`/login?redirect=${encodeURIComponent(currentUrl)}`);
+      return;
+    }
+
+    try {
+      const raw = localStorage.getItem('railflow_active_booking');
+      if (raw) {
+        setActiveBooking(JSON.parse(raw));
+      }
+    } catch (err) {
+      console.error('Failed to parse active booking:', err);
+    }
+  }, [navigate]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -64,24 +84,15 @@ export default function PaymentCheckoutPage() {
           console.warn("Verified locally", err);
         }
 
-        // Retrieve active booking data
-        let activeBooking = null;
-        try {
-          const raw = localStorage.getItem('railflow_active_booking');
-          if (raw) activeBooking = JSON.parse(raw);
-        } catch (err) {
-          console.error(err);
-        }
-
         const coachLetter = activeBooking?.coachType === 'CC' ? 'C' : activeBooking?.coachType === 'EC' ? 'E' : activeBooking?.coachType === '1A' ? 'H' : activeBooking?.coachType === '2A' ? 'A' : activeBooking?.coachType === 'SL' ? 'S' : 'B';
         const allocatedPassengers = (activeBooking?.passengers && activeBooking.passengers.length > 0
           ? activeBooking.passengers
-          : [{ name: 'Gaurav Kumar', age: 26, gender: 'MALE', berthPreference: 'LOWER' }]
+          : [{ name: 'Passenger 1', age: 28, gender: 'MALE', berthPreference: 'LOWER' }]
         ).map((p, idx) => ({
           id: idx + 1,
-          passengerName: p.name || p.passengerName || 'Passenger ' + (idx + 1),
-          name: p.name || p.passengerName || 'Passenger ' + (idx + 1),
-          age: p.age || 26,
+          passengerName: p.name || p.passengerName || `Passenger ${idx + 1}`,
+          name: p.name || p.passengerName || `Passenger ${idx + 1}`,
+          age: p.age || 28,
           gender: p.gender || 'MALE',
           coachNumber: p.chosenCoach || coachLetter + '1',
           coach: p.chosenCoach || coachLetter + '1',
@@ -92,11 +103,13 @@ export default function PaymentCheckoutPage() {
           currentStatus: 'CNF'
         }));
 
+        const primaryPassenger = allocatedPassengers[0]?.name || 'Passenger 1';
+
         const confirmedTicket = {
           bookingId: parseInt(bookingId, 10) || Math.floor(Math.random() * 9000) + 1000,
           pnr: pnr,
-          passengerName: allocatedPassengers[0]?.name || allocatedPassengers[0]?.passengerName || 'Gaurav Kumar',
-          userName: allocatedPassengers[0]?.name || allocatedPassengers[0]?.passengerName || 'Gaurav Kumar',
+          passengerName: primaryPassenger,
+          userName: primaryPassenger,
           status: 'CONFIRMED',
           bookingStatus: 'CONFIRMED',
           trainNumber: activeBooking?.trainNumber || '22436',
@@ -153,6 +166,35 @@ export default function PaymentCheckoutPage() {
             <span className="text-lg font-mono font-bold text-amber-900">{formatTime(timeLeft)}</span>
           </div>
         </div>
+
+        {/* Passenger Summary Card */}
+        {activeBooking && activeBooking.passengers && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
+              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center">
+                <Users className="w-4 h-4 mr-1.5 text-orange-600" />
+                Passenger Manifest ({activeBooking.passengers.length} {activeBooking.passengers.length === 1 ? 'Ticket' : 'Tickets'})
+              </span>
+              <span className="text-xs font-bold text-slate-800">
+                {activeBooking.trainNumber} - {activeBooking.trainName} ({activeBooking.coachType})
+              </span>
+            </div>
+            <div className="space-y-2">
+              {activeBooking.passengers.map((p, idx) => (
+                <div key={idx} className="flex justify-between items-center text-xs bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
+                  <div className="font-medium text-slate-800">
+                    <span className="font-bold text-orange-600 mr-2">{idx + 1}.</span>
+                    {p.name || `Passenger ${idx + 1}`}
+                    <span className="text-slate-500 ml-2">({p.age} yrs, {p.gender})</span>
+                  </div>
+                  <div className="text-slate-600 font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-slate-200">
+                    Pref: {p.berthPreference || 'LOWER'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Payment Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">

@@ -84,7 +84,13 @@ export default function SearchResultsPage() {
 
   const handleBookNow = (train, coachType, fare) => {
     const tid = train.trainId || train.id || 1;
-    navigate(`/booking/${tid}?trainNumber=${train.trainNumber}&trainName=${encodeURIComponent(train.trainName)}&class=${coachType}&fare=${fare}&src=${source}&dest=${destination}&date=${date}`);
+    const targetUrl = `/booking/${tid}?trainNumber=${train.trainNumber}&trainName=${encodeURIComponent(train.trainName)}&class=${coachType}&fare=${fare}&src=${source}&dest=${destination}&date=${date}`;
+    const token = localStorage.getItem('railflow_token');
+    if (!token) {
+      navigate(`/login?redirect=${encodeURIComponent(targetUrl)}`);
+      return;
+    }
+    navigate(targetUrl);
   };
 
   const getCoachList = (train) => {

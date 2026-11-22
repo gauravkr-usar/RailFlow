@@ -20,6 +20,8 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const redirectUrl = searchParams.get('redirect') || '/';
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -28,7 +30,7 @@ export default function AuthPage() {
     try {
       if (isLogin) {
         await login(formData.email.trim(), formData.password);
-        navigate('/');
+        navigate(redirectUrl);
       } else {
         const sanitizedPhone = formData.phoneNumber.replace(/^(\+91|0)/, '').replace(/\D/g, '');
         const payload = {
@@ -39,7 +41,7 @@ export default function AuthPage() {
           phoneNumber: sanitizedPhone
         };
         await register(payload);
-        navigate('/');
+        navigate(redirectUrl);
       }
     } catch (err) {
       const respData = err.response?.data;
@@ -79,6 +81,13 @@ export default function AuthPage() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-6 shadow-sm border border-slate-200 rounded-2xl sm:px-10">
+          {redirectUrl !== '/' && (
+            <div className="mb-4 bg-orange-50 border border-orange-200 text-orange-800 p-3 rounded-lg text-xs flex items-center space-x-2">
+              <Lock className="w-4 h-4 text-orange-600 flex-shrink-0" />
+              <span>Please sign in or register to complete your train ticket booking.</span>
+            </div>
+          )}
+
           {error && (
             <div className="mb-4 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-xs">
               {error}

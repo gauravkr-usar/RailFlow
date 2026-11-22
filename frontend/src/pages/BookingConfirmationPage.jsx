@@ -58,7 +58,7 @@ export default function BookingConfirmationPage() {
             coachType: 'CC',
             totalFare: 1750,
             passengers: [
-              { id: 1, passengerName: 'Gaurav Kumar', name: 'Gaurav Kumar', age: 26, gender: 'MALE', coachNumber: 'C1', seatNumber: 15, berthType: 'WINDOW', status: 'CONFIRMED' }
+              { id: 1, passengerName: 'Passenger 1', name: 'Passenger 1', age: 28, gender: 'MALE', coachNumber: 'C1', seatNumber: 15, berthType: 'WINDOW', status: 'CONFIRMED' }
             ]
           });
         }
