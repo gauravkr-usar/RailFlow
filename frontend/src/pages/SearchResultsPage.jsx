@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Train, Clock, ArrowRight, ShieldCheck, Filter, AlertCircle, Calendar, Radio } from 'lucide-react';
 import { trainAPI } from '../services/api';
+import { searchRealTrains } from '../utils/trainRouteEngine';
 
 export default function SearchResultsPage() {
   const [searchParams] = useSearchParams();
@@ -18,19 +19,39 @@ export default function SearchResultsPage() {
   const [selectedCoachType, setSelectedCoachType] = useState('3A');
 
   useEffect(() => {
+    let isMounted = true;
     setLoading(true);
-    trainAPI.searchTrains({
-      sourceStationCode: source,
-      destStationCode: destination,
-      journeyDate: date,
-      coachType: selectedClass !== 'ALL' ? selectedClass : null,
-      passengerCount: 1
-    }).then(res => {
-      const data = res.data || res;
-      if (Array.isArray(data) && data.length > 0) {
-        setTrains(data);
-      } else {
-        // Dynamic trains between the user's selected stations
+
+    async function fetchTrains() {
+      try {
+        // 1. Instant check in our authentic 3,945 real trains dataset
+        const realMatches = await searchRealTrains(source, destination, selectedClass);
+        if (realMatches.length > 0 && isMounted) {
+          setTrains(realMatches);
+          setLoading(false);
+          return;
+        }
+
+        // 2. Query backend API if no dataset match
+        const res = await trainAPI.searchTrains({
+          sourceStationCode: source,
+          destStationCode: destination,
+          journeyDate: date,
+          coachType: selectedClass !== 'ALL' ? selectedClass : null,
+          passengerCount: 1
+        });
+        const data = res.data || res;
+        if (Array.isArray(data) && data.length > 0 && isMounted) {
+          setTrains(data);
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.warn("Backend train search fallback:", err);
+      }
+
+      // 3. Fallback connecting trains if no direct train found
+      if (isMounted) {
         setTrains([
           {
             trainId: 1,
@@ -77,58 +98,12 @@ export default function SearchResultsPage() {
             fares: { 'SL': 480, '3A': 1240, '2A': 1780 }
           }
         ]);
+        setLoading(false);
       }
-      setLoading(false);
-    }).catch(err => {
-      console.warn("Falling back to route express trains", err);
-      setTrains([
-        {
-          trainId: 1,
-          trainNumber: '22436',
-          trainName: `${source} - ${destination} Vande Bharat Express`,
-          trainType: 'VANDE_BHARAT',
-          departureTime: '06:00:00',
-          arrivalTime: '13:45:00',
-          duration: '7h 45m',
-          availability: {
-            'CC': { availableSeats: 48, status: 'AVAILABLE' },
-            'EC': { availableSeats: 12, status: 'AVAILABLE' }
-          },
-          fares: { 'CC': 1650, 'EC': 3100 }
-        },
-        {
-          trainId: 2,
-          trainNumber: '12302',
-          trainName: `${source} - ${destination} Superfast Rajdhani`,
-          trainType: 'RAJDHANI',
-          departureTime: '16:55:00',
-          arrivalTime: '08:30:00',
-          duration: '15h 35m',
-          availability: {
-            '3A': { availableSeats: 34, status: 'AVAILABLE' },
-            '2A': { availableSeats: 16, status: 'AVAILABLE' },
-            '1A': { availableSeats: 6, status: 'AVAILABLE' }
-          },
-          fares: { '3A': 1420, '2A': 2100, '1A': 3450 }
-        },
-        {
-          trainId: 3,
-          trainNumber: '12560',
-          trainName: `${source} - ${destination} SF Express`,
-          trainType: 'SUPERFAST',
-          departureTime: '20:15:00',
-          arrivalTime: '07:10:00',
-          duration: '10h 55m',
-          availability: {
-            'SL': { availableSeats: 68, status: 'AVAILABLE' },
-            '3A': { availableSeats: 22, status: 'AVAILABLE' },
-            '2A': { availableSeats: 8, status: 'AVAILABLE' }
-          },
-          fares: { 'SL': 480, '3A': 1240, '2A': 1780 }
-        }
-      ]);
-      setLoading(false);
-    });
+    }
+
+    fetchTrains();
+    return () => { isMounted = false; };
   }, [source, destination, date, selectedClass]);
 
   const handleBookNow = (train, coachType, fare) => {

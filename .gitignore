@@ -34,3 +34,4 @@ spring.log
 # Raw datasets
 list_of_stations.json
 dataset_stations/
+dataset_trains/
