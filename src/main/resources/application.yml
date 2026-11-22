@@ -48,7 +48,7 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
   cache:
-    type: redis
+    type: ${SPRING_CACHE_TYPE:none}
     redis:
       time-to-live: 600000
   mail:
