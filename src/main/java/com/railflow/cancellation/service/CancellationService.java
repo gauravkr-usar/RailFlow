@@ -132,8 +132,8 @@ public class CancellationService {
 
         // 6. Automated Waiting List Promotion Engine
         try {
-            int releasedCount = (booking.getPassengers() != null && !booking.getPassengers().isEmpty())
-                    ? booking.getPassengers().size() : 1;
+            int releasedCount = (booking.getBookingPassengers() != null && !booking.getBookingPassengers().isEmpty())
+                    ? booking.getBookingPassengers().size() : 1;
             var promoted = waitingListService.promoteEligiblePassengers(
                     booking.getTrain().getId(),
                     booking.getJourneyDate(),

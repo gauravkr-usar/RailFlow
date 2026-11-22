@@ -91,4 +91,8 @@ public class Booking {
 
     @Version
     private Long version;
+
+    public List<BookingPassenger> getPassengers() {
+        return this.bookingPassengers;
+    }
 }
