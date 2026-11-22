@@ -76,6 +76,7 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      APP_KAFKA_ENABLED: "true"
       JWT_SECRET: RailFlow2024SecretKeyForJWTTokenGenerationMustBe256BitsLongEnough
     restart: unless-stopped
 
